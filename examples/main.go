@@ -18,123 +18,6 @@ func main() {
 
 	sr := gotes.SampleRate(48000)
 	var wave gotes.WaveFn
-	// streamer := newNoteSequence(
-	// 	250 * time.Millisecond,
-	// 	sr,
-	// 	[]float64{55, 110},
-	// 	[]float64{220},
-	// 	[]float64{440, 261},
-	// 	[]float64{55, 110},
-	// )
-
-	// streamer := multiSin(sr, NoteA1)
-	// streamer := multiSquare(sr, NoteA1, NoteA2)
-	// streamer := newSquareStream(440, sr)
-	// streamer := newSinStream(440, sr)
-
-	// streamer := newNoteSequence(
-	// 	500 * time.Millisecond, sr,
-	// 	multiSin(sr, NoteA1),
-	// 	multiSin(sr, NoteA1, NoteA2),
-	// 	multiSin(sr, NoteA2, NoteA3),
-	// 	multiSin(sr, NoteA3, NoteA4),
-	// 	multiSin(sr, NoteA4, NoteA5),
-	// 	multiSin(sr, NoteA5, NoteA6),
-	// 	// multiSin(sr, NoteA6, NoteA7),
-	// )
-
-	// streamer := newNoteSequence(
-	// 	1000 * time.Millisecond, sr,
-	// 	multiSin(sr, NoteA4),
-	// 	multiSquare(sr, NoteA4),
-	// )
-
-	// streamer = newNoteSequence(
-	// 	250*time.Millisecond, sr,
-	// 	multiSin(sr, NoteF4),
-	// 	multiSin(sr, NoteA4),
-	// 	multiSin(sr, NoteC4),
-	// 	multiSin(sr, NoteC4),
-	// 	multiSin(sr, NoteD4),
-	// 	multiSin(sr, NoteD4),
-	// 	multiSin(sr, NoteC4),
-	// 	multiSin(sr, NoteC4),
-	// )
-
-	// streamer := newTriangleStream(sr, NoteA4)
-	// streamer = multiSin(sr, NoteA2)
-
-	// streamer = newLinearFadeLooper(
-	// 	sr,
-	// 	250*time.Millisecond, 50*time.Millisecond,
-	// 	noteFn(sr, NoteF4),
-	// 	noteFn(sr, NoteA4),
-	// 	noteFn(sr, NoteC4),
-	// 	noteFn(sr, NoteC4),
-	// 	noteFn(sr, NoteD4),
-	// 	noteFn(sr, NoteD4),
-	// 	noteFn(sr, NoteC4),
-	// 	noteFn(sr, NoteC4),
-	// )
-
-	// streamer = newLinearFadeLooper(
-	// 	sr,
-	// 	1000*time.Millisecond, 1000*time.Millisecond,
-	// 	noteFn(sr, NoteA2),
-	// 	noteFn(sr, NoteA5),
-	// )
-
-	// so - I think this works. That said, the effect is subtle, and due to my
-	// mediocre ear I can't really say it's all that different. It seems like
-	// the tone is a little "stronger" here, whereas the linear one spends more
-	// time in transition.
-	// streamer = newExpFadeLooper(
-	// 	sr,
-	// 	1000*time.Millisecond, 1000*time.Millisecond,
-	// 	noteFn(sr, NoteA2),
-	// 	noteFn(sr, NoteA5),
-	// )
-
-	// so interesting - square streams at full volume do not change w/
-	// multiple. But sin does, and . That makes me happy - I think I
-	// understand the mechanics of beep's mixing. It's not really a very
-	// sophisticated technique.
-
-	// question - from my understanding, mixing was just chopping values
-	// greater than zero.
-
-	// This is an interesting one. Definitely can tell it's quieter. But
-	// also interesting is when I place two speakers together and don't
-	// negate is that intensity varies by distance - I'm guessing there's
-	// some weird interference patterns there.
-	//
-	// streamer = newNegateStream(streamer)
-
-	// streamer = weirdNote1(sr, NoteA3)
-	// streamer = newSinStream(sr, (NoteA2))
-	// streamer = gotes.PeriodicFreqNote(sr, gotes.NoteA2, gotes.NoteA3, 10*time.Second)
-	// streamer = mistakenPeriodicFreqNote(sr, NoteA2, NoteA3, 20 * time.Second)
-	// streamer = basicSinNote(sr, NoteA3)
-
-	// let's see if I can swap out the note functions here with an envelope for
-	// streamer = newExpFadeLooper(
-	// 	sr,
-	// 	500*time.Millisecond, 50*time.Millisecond,
-	// 	sinKeyFn(sr, NoteA4, 500*time.Millisecond),
-	// )
-
-	// streamer = gotes.WeirdNote2(sr, gotes.NoteA4)
-	// streamer = newSinStream(sr, NoteA4)
-
-	// streamer = newExpFadeLooper(
-	// 	sr,
-	// 	1500*time.Millisecond, 50*time.Millisecond,
-	// 	func() beep.Streamer {
-	// 		return pianoNote(sr, NoteA4, 1500*time.Millisecond)
-	// 	},
-	// )
-
-	// streamer = gotes.PeriodicFreqNote(sr, gotes.NoteA2, gotes.NoteA3, 10*time.Second)
 
 	wave = gotes.WaveFnSequence(
 		250*time.Millisecond,
@@ -145,7 +28,13 @@ func main() {
 		gotes.SinWave(gotes.NoteA5),
 	)
 
-	// streamer = gotes.SawWave(gotes.NoteA3)
+	wave = gotes.ExpFadeLooperWave(
+		1000*time.Millisecond, 1000*time.Millisecond,
+		gotes.SinWave(gotes.NoteA2),
+		gotes.SinWave(gotes.NoteA5),
+	)
+
+	wave = gotes.SawWave(gotes.NoteA3)
 
 	wave = gotes.WeirdWave1(gotes.NoteA3)
 	wave = gotes.WeirdWave2(gotes.NoteA3)
@@ -168,11 +57,18 @@ func main() {
 		gotes.SinWave(gotes.NoteC4),
 	)
 
-	// wave = gotes.ExpFadeLooperWave(
-	// 	1000*time.Millisecond, 1000*time.Millisecond,
-	// 	gotes.SinWave(gotes.NoteA2),
-	// 	gotes.SinWave(gotes.NoteA5),
-	// )
+	wave = gotes.ExpFadeLooperWave(
+		250*time.Millisecond,
+		200*time.Millisecond,
+		gotes.SinWave(gotes.NoteF4),
+		gotes.SinWave(gotes.NoteA4),
+		gotes.SinWave(gotes.NoteC4),
+		gotes.SinWave(gotes.NoteC4),
+		gotes.SinWave(gotes.NoteD4),
+		gotes.SinWave(gotes.NoteD4),
+		gotes.SinWave(gotes.NoteC4),
+		gotes.SinWave(gotes.NoteC4),
+	)
 
 	streamer := gotes.BiStreamerFromWave(sr, wave)
 
@@ -236,9 +132,6 @@ func getInfo(samples [][2]float64) sampleInfo {
 		info.max = math.Max(s0, info.max)
 		info.max = math.Max(s1, info.max)
 
-		// note (bs): let's turn this into a "raw amplitute" with abs
-		// values. This was useful to see the basic pattern, but it's
-		// pretty boring now.
 		info.average += (math.Abs(s0) + math.Abs(s1)) / 2
 	}
 	info.average /= float64(len(samples))

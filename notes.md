@@ -90,3 +90,9 @@ some simple things, like:
   sound - https://en.wikipedia.org/wiki/Psychoacoustics. Includes a nice graph
   on relative loudness. If I were to spin a task off of this, I'd say play with
   a system that tries to normalize apparent loudness of a wave.
+
+
+## Misc Links
+
+A fairly simple but useful look at a few different synths and the basics of
+their sound - http://www.acoustics.salford.ac.uk/acoustics_info/sound_synthesis/

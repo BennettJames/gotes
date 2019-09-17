@@ -54,6 +54,12 @@ func PianoWave(dur time.Duration, freq float64) WaveFn {
 			return 0
 		}
 
+		// ques (bs): would it make sense to separate this out some? The underlying
+		// wave can be handled separately, as it is in "WeirdWave2". This could
+		// completely ignore the underlying wave; and instead just apply an envelope
+		// to it. That is sort of pleasant in that it highlights the different
+		// elements - there is a pseudo-resonant wave that a note consists of via a
+		// shaped amplitude-envelope.
 		v := fn(t, math.Pow(fn(t, 0), 2)+0.75*fn(t, 0.25)+0.1*fn(t, 0.5))
 		if t < attackT {
 			return v * t / attackT
