@@ -59,7 +59,7 @@ func main() {
 
 	wave = gotes.ExpFadeLooperWave(
 		250*time.Millisecond,
-		200*time.Millisecond,
+		150*time.Millisecond,
 		gotes.SinWave(gotes.NoteF4),
 		gotes.SinWave(gotes.NoteA4),
 		gotes.SinWave(gotes.NoteC4),
@@ -70,13 +70,24 @@ func main() {
 		gotes.SinWave(gotes.NoteC4),
 	)
 
-	streamer := gotes.BiStreamerFromWave(sr, wave)
+	wave = gotes.SigmoidFadeLooperWave(
+		250*time.Millisecond,
+		100*time.Millisecond,
+		gotes.SinWave(gotes.NoteF4),
+		gotes.SinWave(gotes.NoteA4),
+		gotes.SinWave(gotes.NoteC4),
+		gotes.SinWave(gotes.NoteC4),
+		gotes.SinWave(gotes.NoteD4),
+		gotes.SinWave(gotes.NoteD4),
+		gotes.SinWave(gotes.NoteC4),
+		gotes.SinWave(gotes.NoteC4),
+	)
 
-	vol := gotes.NewVolume(streamer, -2)
+	gainStreamer := gotes.NewGainStreamer(sr, wave, 0.4)
 
 	speaker := gotes.NewSpeaker(
 		gotes.SampleRate(sr),
-		vol,
+		gainStreamer,
 		sr.N(1000*time.Millisecond))
 
 	var _ = wave

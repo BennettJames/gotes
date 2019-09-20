@@ -25,6 +25,13 @@ func ExpFadeLooperWave(
 	return genericFadeLooperWave(dur, fade, expMix, fns...)
 }
 
+func SigmoidFadeLooperWave(
+	dur, fade time.Duration,
+	fns ...WaveFn,
+) WaveFn {
+	return genericFadeLooperWave(dur, fade, sigmoidMix, fns...)
+}
+
 func genericFadeLooperWave(
 	dur, fade time.Duration,
 	mix func(t float64, v1, v2 float64) float64,
@@ -65,3 +72,28 @@ func expMix(t float64, v1, v2 float64) float64 {
 	fadeIn := 1 - fadeOut
 	return fadeOut*v1 + fadeIn*v2
 }
+
+func sinMix(t float64, v1, v2 float64) float64 {
+	t = math.Min(1, math.Max(0, t))
+	fadeOut := (math.Cos(t*math.Pi) + 1) / 2
+	fadeIn := 1 - fadeOut
+	return v1*fadeOut + v2*fadeIn
+}
+
+func sigmoidMix(t float64, v1, v2 float64) float64 {
+	t = math.Min(1, math.Max(0, t))
+	fadeIn := 1 / (1 + math.Pow(math.E, 6-12*t))
+	fadeOut := 1 - fadeIn
+	return v1*fadeOut + v2*fadeIn
+
+	// note - other than the popping, the inverse here was kinda interesting.
+	// Could I do somehting similar w/out popping? Basically, that would mean
+	// rapid inversion, then coming back up.
+	//
+	// I think rather than do anything now, I'll just make note that being able
+	// to more minutely vary and mix notes would be nice.
+}
+
+// so - given the now-simplicity of swapping out mixing effects for transitions,
+// would I want to try out any other fades? Other options are logarithmic, sine,
+// sigmoid.

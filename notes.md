@@ -40,7 +40,7 @@ some simple things, like:
   looking up, but only afterwards - let's try a hacked version that does 440 ->
   880 in a few steps.
 
-- note: I'm not worrying about this too much now as it's not super necessary for
+- [-] note: I'm not worrying about this too much now as it's not super necessary for
   hacking, but I will add that I don't think my volume modifications are quite
   kosher - I'm given to belief that scaling up/down would require something more
   complicated than straight scalars.
@@ -82,17 +82,17 @@ some simple things, like:
   to make it continuous (or would I?) and properly periodic. I'd guess there are
   some fairly straightforward equations for that; and that
 
-- This is pretty dumb bookkeeping, but I do a lot of explicit index management
-  for no particular reason. Let's try to just use for..range unless I have a
-  good reason not to.
-
-- [-] Not really a task, but here's an interesting article on the psychology of
-  sound - https://en.wikipedia.org/wiki/Psychoacoustics. Includes a nice graph
-  on relative loudness. If I were to spin a task off of this, I'd say play with
-  a system that tries to normalize apparent loudness of a wave.
-
 
 ## Misc Links
 
-A fairly simple but useful look at a few different synths and the basics of
-their sound - http://www.acoustics.salford.ac.uk/acoustics_info/sound_synthesis/
+- A fairly simple but useful look at a few different synths and the basics of
+  their sound -
+  http://www.acoustics.salford.ac.uk/acoustics_info/sound_synthesis/
+
+- Here's an interesting article on the psychology of sound -
+  https://en.wikipedia.org/wiki/Psychoacoustics. Includes a nice graph on
+  relative loudness. If I were to spin a task off of this, I'd say play with a
+  system that tries to normalize apparent loudness of a wave.
+
+- A large set of synthesis tutorials form "sound on sound" -
+  https://sonicbloom.net/en/63-in-depth-synthesis-tutorials-by-sound-on-sound/
