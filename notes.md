@@ -59,7 +59,7 @@ some simple things, like:
 
 - [x] add a linear fader and a way to loop notes with it.
 
-- Do I want to try some other fading techniques? Wouldn't be bad. Maybe
+- [x] Do I want to try some other fading techniques? Wouldn't be bad. Maybe
   exponential, logarithmic, equal power, sine, sigmoid. Or some subset of those
   - I don't need to punish myself here, and given the subtlety of the effect I
     may not have a terrible amount of patience.

@@ -50,9 +50,10 @@ type GainStreamer struct {
 
 func NewGainStreamer(sr SampleRate, fn WaveFn, initGain float64) *GainStreamer {
 	return &GainStreamer{
-		sr:    sr,
-		fn:    fn,
-		gainV: math.Max(0, initGain),
+		sr:        sr,
+		fn:        fn,
+		gainV:     math.Max(0, initGain),
+		lastGainV: math.Max(0, initGain),
 	}
 }
 

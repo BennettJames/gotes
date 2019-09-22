@@ -5,80 +5,91 @@ import (
 	"time"
 )
 
-func WaveFnSequence(
-	step time.Duration,
-	waves ...WaveFn,
-) WaveFn {
-	return func(t float64) float64 {
-		// todo (bs): need to port linear fade to this so it won't pop. I actually
-		// think it doesn't right now due to stability, but that's not a very stable
-		// system.
-		waveI := int(t / (float64(step) / float64(time.Second)))
-		return waves[waveI%len(waves)](t)
-	}
+// PianoWave creates a piano-like note at the given frequency over the time
+// period.
+func PianoWave(dur time.Duration, freq float64) WaveFn {
+	durT := float64(dur) / float64(time.Second)
+	dampen := math.Pow(0.5*math.Log(freq*0.3), 2)
+	return AmplifyWave(
+		AttackAndDecay(durT, dampen),
+		IntegrateWave(
+			MultiplyTime(freq),
+			BasicPianoWave,
+		),
+	)
 }
 
-func WeirdWave1(freq float64) WaveFn {
-	return func(t float64) float64 {
-		return math.Sin(1.2*math.Pi*freq*t + math.Sin(2*math.Pi*freq*t))
-	}
-}
-
-func WeirdWave2(freq float64) WaveFn {
-	// note (bs): fundamentally, I think this is very smilar to a tonewheel organ
+// BasicPianoWave creates a waveform with a degree of internal resonance that
+// can be shaped to sound somewhat piano-like.
+func BasicPianoWave(t float64) float64 {
+	// note (bs): fundamentally, I think this is very similar to a tonewheel organ
 	// note. Let's see if I can figure out the internals for that, and perhaps
 	// generalize this.
-	fn := func(x, o float64) float64 {
-		return math.Sin(2*math.Pi*x*freq + o)
+	fn := func(o float64) float64 {
+		return math.Sin(2*math.Pi*t + o)
 	}
-
-	return func(t float64) float64 {
-		return fn(t, math.Pow(fn(t, 0), 2)+0.75*fn(t, 0.25)+0.1*fn(t, 0.5))
-	}
+	return fn(math.Pow(fn(0), 2) + 0.75*fn(0.25) + 0.1*fn(0.5))
 }
 
-func PianoWave(dur time.Duration, freq float64) WaveFn {
-	fn := func(x, o float64) float64 {
-		return math.Sin(2*math.Pi*x*freq + o)
-	}
-
-	// note (bs): rather than enforce duration > attack, I think it'd be better to
-	// set attack to a shorter amount if duration is short; e.g. if it's <500ms
-	// then shorten attack proportionally.
+// AttackAndDecay is an amplitude function that has an initial rapid gain phase
+// (the "attack"), and a fadeout over the course of durT. dampen controls the
+// rate of the fadeout, with higher values increasing the severity of it.
+func AttackAndDecay(
+	durT float64,
+	dampen float64,
+) AmpFn {
 	attackT := 0.002
-	durT := math.Max(attackT*2, float64(dur)/float64(time.Second))
-	dampen := math.Pow(0.5*math.Log(freq*0.3), 2)
-
+	durT = math.Max(attackT*2, durT)
 	return func(t float64) float64 {
-		if t > durT {
+		if t < 0 {
 			return 0
+		} else if t < attackT {
+			return t / attackT
+		} else if t < durT {
+			return math.Pow(1-(t-attackT)/(durT-attackT), dampen)
 		}
-
-		// ques (bs): would it make sense to separate this out some? The underlying
-		// wave can be handled separately, as it is in "WeirdWave2". This could
-		// completely ignore the underlying wave; and instead just apply an envelope
-		// to it. That is sort of pleasant in that it highlights the different
-		// elements - there is a pseudo-resonant wave that a note consists of via a
-		// shaped amplitude-envelope.
-		v := fn(t, math.Pow(fn(t, 0), 2)+0.75*fn(t, 0.25)+0.1*fn(t, 0.5))
-		if t < attackT {
-			return v * t / attackT
-		}
-		return v * math.Pow(1-(t-attackT)/(durT-attackT), dampen)
+		return 0
 	}
 }
 
+// WeirdPianoWave produces a sound akin to piano note, but with a different
+// waveform.
+func WeirdPianoWave(dur time.Duration, freq float64) WaveFn {
+	durT := float64(dur) / float64(time.Second)
+	dampen := math.Pow(0.5*math.Log(freq*0.3), 2)
+	return AmplifyWave(
+		AttackAndDecay(durT, dampen),
+		IntegrateWave(
+			MultiplyTime(freq),
+			WeirdWave1,
+		),
+	)
+}
+
+// WeirdWave1 is a random attempt at an alternate waveform.
+func WeirdWave1(t float64) float64 {
+	return math.Sin(2*math.Pi*t + math.Sin(3.4*math.Pi*t))
+}
+
+// PeriodicSinWave cycles between the two given frequencies in each cycle.
 func PeriodicSinWave(cycle time.Duration, f1, f2 float64) WaveFn {
 	if f1 > f2 {
 		f2, f1 = f1, f2
 	}
+	return IntegrateWave(
+		SinTime(f1, f2, float64(time.Second)/float64(cycle)),
+		BasicSinFn,
+	)
+}
+
+// SinTime is a time function that varies the rate of change according to a sin
+// wave. The rate varies between low and high in each period.
+func SinTime(low, high, period float64) TimeFn {
+	// note (bs): so, this is a little better. Still a little curious if it could
+	// be better. Perhaps not.
+	d := 2 * math.Pi * period
 	return func(t float64) float64 {
-		// ques (bs): is it possible to abstract this transition some to make it
-		// more of a pure "time variation"? Let's play around some.
-		d := float64(time.Second) / float64(cycle) * 2 * math.Pi
-		base := (f1 + f2) / 2 * t
-		variation := (f2 - f1) / (2 * d) * math.Cos(t*d)
-		return math.Sin((base + variation) * 2 * math.Pi)
+		return (low+high)/2*t + (high-low)/(2*d)*math.Sin(d*t)
 	}
 }
 

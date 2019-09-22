@@ -93,7 +93,3 @@ func sigmoidMix(t float64, v1, v2 float64) float64 {
 	// I think rather than do anything now, I'll just make note that being able
 	// to more minutely vary and mix notes would be nice.
 }
-
-// so - given the now-simplicity of swapping out mixing effects for transitions,
-// would I want to try out any other fades? Other options are logarithmic, sine,
-// sigmoid.
