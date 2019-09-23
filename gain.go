@@ -14,10 +14,53 @@ const (
 	gainTransitionT = 0.2
 )
 
-func Gain(amt float64, fn WaveFn) WaveFn {
+// func Gain(amt float64, fn WaveFn) WaveFn {
+// 	g := math.Pow(2, math.Max(0, amt)) - 1
+// 	return func(t float64) float64 {
+// 		return fn(t) * g
+// 	}
+// }
+
+func Gain(amt float64) AmpFn {
 	g := math.Pow(2, math.Max(0, amt)) - 1
 	return func(t float64) float64 {
-		return fn(t) * g
+		return g
+	}
+}
+
+func ScaleGain(amt1, amt2 float64) AmpFn {
+	amt1, amt2 = math.Max(0, amt1), math.Max(0, amt2)
+	return func(t float64) float64 {
+		// I don't think I like the function "getTransitionAmt". It's a more general
+		// question of mapping a value to [0,1] w/ different formula. This is a
+		// linear interpolation function that I need to give a period for (and
+		// arguably a starting point, if you feel so inclined)
+		amt := getTransitionAmt(t)
+		return math.Pow(2, amt1*(1-amt)+amt2*amt) - 1
+	}
+}
+
+func ScaleToLinear(startT, periodT float64) func(t float64) float64 {
+	// so - here's an experiment to kind of generalize the type of function that
+	// scales two values in a time period. Not sure I 100% agree with this API - I
+	// sort of think that even if I did it, I'd be better as a more direct
+	// interpolate fn like
+	//
+	//  type InterpolateFn func(t float64, v1, v2 float64) float64
+	//
+	// or maybe
+	//
+	//  type Interpolate func(sFn ScaleFn, w1, w2 WaveFn) WaveFn
+	//
+	//
+
+	return func(t float64) float64 {
+		if t <= startT {
+			return 0
+		} else if t >= startT+periodT {
+			return 1
+		}
+		return (t - startT) / periodT
 	}
 }
 

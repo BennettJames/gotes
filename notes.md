@@ -96,3 +96,10 @@ some simple things, like:
 
 - A large set of synthesis tutorials form "sound on sound" -
   https://sonicbloom.net/en/63-in-depth-synthesis-tutorials-by-sound-on-sound/
+
+- A detailed guide to a lot of sound math -
+  http://digitalsoundandmusic.com/chapters/ch2/#prettyPhoto
+
+- Some simple piano tutorials, which may be useful if I want to expand the
+  number/type of demos -
+  http://www.piano-keyboard-guide.com/category/easy-piano-tutorials/
