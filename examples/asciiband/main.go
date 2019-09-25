@@ -4,10 +4,12 @@ import (
 	"log"
 
 	"github.com/gdamore/tcell"
+
+	"github.com/bennettjames/gotes/internal/iutil"
 )
 
 func main() {
-	ctx, cancel := RootContext()
+	ctx, cancel := iutil.RootContext()
 	defer cancel()
 
 	screen, screenErr := tcell.NewScreen()

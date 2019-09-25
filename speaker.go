@@ -45,20 +45,11 @@ func (s *Speaker) Run(ctx context.Context) error {
 	player := otoCtx.NewPlayer()
 	defer player.Close()
 
-	samples := make([][2]float64, s.bufSize)
-	buf := make([]byte, s.bufSize*4)
+	sampleSize := 512
+	samples := make([][2]float64, sampleSize)
+	buf := make([]byte, sampleSize*4)
 
 	update := func() error {
-
-		// ques (bs): is this getting samples at buffer size rather than 512? If so,
-		// should I deliberately slow it down? Actually, this doesn't even really
-		// look like a proper buffer.
-		//
-		// I think streamFrom does that - let's consider using it. I'd like to do a
-		// more thorough rethink of buffering before committing to anything in
-		// particular though.
-		//
-		// streamFrom(s.stream, samples)
 
 		s.stream.Stream(samples)
 
@@ -93,53 +84,4 @@ func (s *Speaker) Run(ctx context.Context) error {
 			}
 		}
 	}
-}
-
-func streamFrom(stream BiStreamer, samples [][2]float64) {
-
-	var tmp [512][2]float64
-
-	for len(samples) > 0 {
-		toStream := len(tmp)
-		if toStream > len(samples) {
-			toStream = len(samples)
-		}
-
-		// clear the samples
-		for i := range samples[:toStream] {
-			samples[i] = [2]float64{}
-		}
-
-		// mix the stream
-		stream.Stream(tmp[:toStream])
-		for i := range tmp[:toStream] {
-			samples[i][0] += tmp[i][0]
-			samples[i][1] += tmp[i][1]
-		}
-
-		samples = samples[toStream:]
-	}
-
-	/*
-		var tmp [512][2]float64
-
-		for len(samples) > 0 {
-			toStream := len(tmp)
-			if toStream > len(samples) {
-				toStream = len(samples)
-			}
-
-			// clear the samples
-			for i := range samples[:toStream] {
-				samples[i] = [2]float64{}
-			}
-
-			stream.Stream(tmp[:toStream])
-			for i := range tmp[:toStream] {
-				samples[i][0] += tmp[i][0]
-				samples[i][1] += tmp[i][1]
-			}
-
-			samples = samples[toStream:]
-		} */
 }

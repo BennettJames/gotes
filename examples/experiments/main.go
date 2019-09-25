@@ -1,17 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math"
 	"time"
 
 	"github.com/bennettjames/gotes"
+	"github.com/bennettjames/gotes/internal/iutil"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := iutil.RootContext()
 	defer cancel()
 
 	fmt.Println("running")
@@ -142,84 +142,42 @@ func main() {
 		),
 	)
 
-	// note (bs): so, this works, but is dreadfully inefficient. I think I'd like
-	// to create a notion of "finite amplitude functions", wherein a function is
-	// able to "know" that it is only active so long, then explicitly can be
-	// removed from calculations.
-	//
-	// Also, I'd like to take a somewhat deeper look at "sustaining notes".
-	// Particularly, I think the current decay pattern works best with simple, one
-	// stroke full notes. I'd guess it works ok for short hits (just decrease the
-	// time), but I'd *guess* there should be a more explicit sustain action in
-	// cases where you hit a longer note. Also possible that just doing it short/long
-	// should be fine.
-	space := 0.4
-	wave = combineWave(
-		gotes.OffsetWave(space*0, gotes.PianoWave(2000*time.Millisecond, gotes.NoteC4)),
-		gotes.OffsetWave(space*1, gotes.PianoWave(2000*time.Millisecond, gotes.NoteC4)),
-		gotes.OffsetWave(space*2, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*3, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*4, gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4)),
-		gotes.OffsetWave(space*5, gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4)),
-		gotes.OffsetWave(space*6, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
+	kb := gotes.NewKeyboard(sr, 2000*time.Millisecond)
+	go func() {
+		twinkleNotes := []float64{
+			gotes.NoteC4, gotes.NoteC4, gotes.NoteG4, gotes.NoteG4,
+			gotes.NoteA4, gotes.NoteA4, gotes.NoteG4, 0,
 
-		gotes.OffsetWave(space*8, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*9, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*10, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*11, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*12, gotes.PianoWave(2000*time.Millisecond, gotes.NoteD4)),
-		gotes.OffsetWave(space*13, gotes.PianoWave(2000*time.Millisecond, gotes.NoteD4)),
-		gotes.OffsetWave(space*14, gotes.PianoWave(2000*time.Millisecond, gotes.NoteC4)),
+			gotes.NoteF4, gotes.NoteF4, gotes.NoteE4, gotes.NoteE4,
+			gotes.NoteD4, gotes.NoteD4, gotes.NoteC4, 0,
 
-		gotes.OffsetWave(space*16, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*17, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*18, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*19, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*20, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*21, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*22, gotes.PianoWave(2000*time.Millisecond, gotes.NoteD4)),
+			gotes.NoteG4, gotes.NoteG4, gotes.NoteF4, gotes.NoteF4,
+			gotes.NoteE4, gotes.NoteE4, gotes.NoteD4, 0,
 
-		gotes.OffsetWave(space*24, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*25, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*26, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*27, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*28, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*29, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*30, gotes.PianoWave(2000*time.Millisecond, gotes.NoteD4)),
+			gotes.NoteG4, gotes.NoteG4, gotes.NoteF4, gotes.NoteF4,
+			gotes.NoteE4, gotes.NoteE4, gotes.NoteD4, 0,
 
-		gotes.OffsetWave(space*32, gotes.PianoWave(2000*time.Millisecond, gotes.NoteC4)),
-		gotes.OffsetWave(space*33, gotes.PianoWave(2000*time.Millisecond, gotes.NoteC4)),
-		gotes.OffsetWave(space*34, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*35, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
-		gotes.OffsetWave(space*36, gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4)),
-		gotes.OffsetWave(space*37, gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4)),
-		gotes.OffsetWave(space*38, gotes.PianoWave(2000*time.Millisecond, gotes.NoteG4)),
+			gotes.NoteC4, gotes.NoteC4, gotes.NoteG4, gotes.NoteG4,
+			gotes.NoteA4, gotes.NoteA4, gotes.NoteG4, 0,
 
-		gotes.OffsetWave(space*40, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*41, gotes.PianoWave(2000*time.Millisecond, gotes.NoteF4)),
-		gotes.OffsetWave(space*42, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*43, gotes.PianoWave(2000*time.Millisecond, gotes.NoteE4)),
-		gotes.OffsetWave(space*44, gotes.PianoWave(2000*time.Millisecond, gotes.NoteD4)),
-		gotes.OffsetWave(space*45, gotes.PianoWave(2000*time.Millisecond, gotes.NoteD4)),
-		gotes.OffsetWave(space*46, gotes.PianoWave(2000*time.Millisecond, gotes.NoteC4)),
+			gotes.NoteF4, gotes.NoteF4, gotes.NoteE4, gotes.NoteE4,
+			gotes.NoteD4, gotes.NoteD4, gotes.NoteC4, 0,
+		}
 
-		// gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4),
-		// gotes.OffsetWave(0.25, gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4)),
-		// gotes.PianoWave(2000*time.Millisecond, gotes.NoteA2),
-	)
-
-	oldWave := wave
-	wave = func(t float64) float64 {
-		return oldWave(math.Mod(t, space*55+2))
-	}
-
-	// streamer = gotes.NewGainStreamer(sr, wave, 0.4)
-	streamer = gotes.NewGainStreamer(sr, wave, 0.4)
+		for {
+			for _, n := range twinkleNotes {
+				time.Sleep(400 * time.Millisecond)
+				kb.Add(n)
+			}
+			time.Sleep(1000 * time.Millisecond)
+		}
+	}()
+	streamer = kb
 
 	speaker := gotes.NewSpeaker(
 		gotes.SampleRate(sr),
 		streamer,
-		sr.N(1000*time.Millisecond))
+		sr.N(100*time.Millisecond))
 
 	var _ = wave
 	log.Fatal(speaker.Run(ctx))

@@ -1,6 +1,9 @@
 
 # Misc Notes
 
+
+## Various Potential TODOs
+
 alright, let's see if I can just hack around a little on this. Let's try
 some simple things, like:
 

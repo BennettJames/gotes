@@ -60,19 +60,20 @@ func runRenderer(
 		}
 	}()
 
+	chars := []byte{}
+	for c := byte('A'); c <= 'Z'; c++ {
+		chars = append(chars, c)
+	}
+	for c := byte('0'); c <= '9'; c++ {
+		chars = append(chars, c)
+	}
+
 	for {
 		screen.Clear()
 
 		x, y := int(atomic.LoadInt64(&xOffset)), int(atomic.LoadInt64(&yOffset))
-
-		for c := byte('A'); c <= 'Z'; c++ {
-			i := int(c - 'A')
+		for i, c := range chars {
 			drawCellChar(screen, x+(i%13)*5, y+(i/13)*7, GetCellChar(c), tcell.ColorLime)
-		}
-
-		for c := byte('0'); c <= '9'; c++ {
-			i := int(c - '0')
-			drawCellChar(screen, x+(i%13)*5, y+20+(i/13)*7, GetCellChar(c), tcell.ColorLime)
 		}
 
 		screen.Show()

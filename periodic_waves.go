@@ -1,11 +1,15 @@
 package gotes
 
 type (
-	WaveFn   func(t float64) float64
-	BiWaveFn func(t float64) [2]float64
+	WaveFn   func(t float64) (v float64)
+	BiWaveFn func(t float64) (v [2]float64)
+
+	// WaveFFn is a "finite" WaveFn. It will fade out and stop producing any
+	// nonzero values past a certain t, at which point it will
+	WaveFFn func(t float64) (v float64, done bool)
 
 	// note (bs): for the next two values, I'm not convinced I shouldn't just
-	// create an annotated function rather than the two
+	// create an annotated function rather than the two types.
 
 	streamerWave struct {
 		sr           SampleRate
