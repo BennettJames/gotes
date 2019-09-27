@@ -12,6 +12,22 @@ type (
 	}
 )
 
+// AvailableChars returns a list of all characters with a known render pattern.
+func AvailableChars() []byte {
+	// note (bs): I suspect this should be implicitly derivable from the set of
+	// known chars by having better, more intelligent underlying data structures.
+	chars := []byte{}
+	for c := byte('A'); c <= 'Z'; c++ {
+		chars = append(chars, c)
+	}
+	for c := byte('0'); c <= '9'; c++ {
+		chars = append(chars, c)
+	}
+	return chars
+}
+
+// GetCellChar will return the set of cells needed to render the given
+// character, if it's available. Otherwise, returns an empty set of cells.
 func GetCellChar(c byte) CellChar {
 	switch c {
 	case 'A':

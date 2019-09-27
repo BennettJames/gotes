@@ -18,7 +18,9 @@ func main() {
 
 	sr := gotes.SampleRate(48000)
 	var wave gotes.WaveFn
+	var _ = wave
 	var streamer gotes.BiStreamer
+	var _ = streamer
 
 	wave = gotes.LinearFadeLooperWave(
 		250*time.Millisecond,
@@ -174,12 +176,7 @@ func main() {
 	}()
 	streamer = kb
 
-	speaker := gotes.NewSpeaker(
-		gotes.SampleRate(sr),
-		streamer,
-		sr.N(100*time.Millisecond))
-
-	var _ = wave
+	speaker := gotes.NewSpeaker(sr, streamer, sr.N(100*time.Millisecond))
 	log.Fatal(speaker.Run(ctx))
 }
 
