@@ -2,6 +2,7 @@ package main
 
 import (
 	"sync"
+	"time"
 
 	"github.com/gdamore/tcell"
 )
@@ -32,6 +33,48 @@ type (
 
 	Pos struct {
 		X, Y int
+	}
+
+	NoteBoard struct {
+		StartTime, LastTime time.Time
+		Steps               int
+
+		PlaybackRate float64
+		NoteLimit    int
+
+		// note (bs): not necessary quite yet, but there is also a two-handed
+		// version of this. Could of course try to
+
+		// how do I want to represent notes? Input will essentially consist of a
+		// "schedule" of notes - a list of notes, and when they should be played
+		// relative to the start.
+		//
+		// That can be done via times, but need not - the playback can be adjusted;
+		// though it's not a bad idea to have a built-in notion of times
+		ScheduledNotes []ScheduledNote
+
+		ActiveNotes []BoardChar
+	}
+
+	// so, thinking more about the underlying note structure here: I think there's
+	// really two things I need from them:
+	//
+	// - an underlying set of note information that is fixed; i.e. the actual keys
+	//
+	// - A dynamic set of keys. Velocity/direction is fixed; but they should start
+	// at (x, 0), and go down until y exceed height (let's populate a "range")
+	//
+	// I think the actual key presses in the end will just be based on the second;
+	// as they're the "interactive" portion of the data.
+
+	ScheduledNote struct {
+		At time.Duration
+
+		// note (bs): for now, I'm going to represent notes with bytes A-G with
+		// corresponding keys and range in the 4th octave. This should be better.
+		DispChar byte
+
+		Note float64
 	}
 )
 
@@ -92,9 +135,83 @@ func boardWithChar(b Board, c BoardChar) Board {
 	return newBoard
 }
 
+func charWithPos(c BoardChar, p Pos) BoardChar {
+	newC := c
+	newC.Pos = p
+	return newC
+}
+
 func updatePos(p Pos, x, y int) Pos {
 	newPos := p
 	newPos.X += x
 	newPos.Y += y
 	return newPos
+}
+
+func noteBoardUpdate(noteB NoteBoard, now time.Time) NoteBoard {
+	stepSize := 100 * time.Millisecond
+
+	newBoard := noteB
+
+	rate := newBoard.PlaybackRate
+	if newBoard.PlaybackRate <= 0 {
+		rate = 1
+	}
+
+	for now.Sub(newBoard.LastTime) >= stepSize {
+
+		elapsed := newBoard.LastTime.Sub(newBoard.StartTime)
+		newBoard.LastTime = newBoard.LastTime.Add(stepSize)
+
+		for _, sn := range newBoard.ScheduledNotes {
+			// todo (bs): let's add a "playback rate" that lets you adjust the speed
+
+			diff := elapsed - time.Duration(float64(sn.At)/rate)
+			if diff > 0 || diff <= -stepSize {
+				continue
+			}
+
+			x := 0
+			off := 7 // todo (bs): a little hacky, but real tempted to make this a global
+			switch sn.DispChar {
+			case 'A':
+				x = 0 * off
+			case 'S':
+				x = 1 * off
+			case 'D':
+				x = 2 * off
+			case 'F':
+				x = 3 * off
+			case 'J':
+				x = 4 * off
+			case 'K':
+				x = 5 * off
+			case 'L':
+				x = 6 * off
+			}
+
+			newBoard.ActiveNotes = append(newBoard.ActiveNotes, BoardChar{
+				Pos: Pos{
+					X: x,
+					Y: 0,
+				},
+				Color: randPastel(),
+				Char:  sn.DispChar,
+			})
+		}
+
+		// this may also need some notion of "cutoff", at which point a note is
+		// removed. Let's just hardcode it for now.
+		newActiveNotes := []BoardChar{}
+		for _, an := range newBoard.ActiveNotes {
+			updatedNote := charWithPos(an, updatePos(an.Pos, 0, 1))
+			if newBoard.NoteLimit > 0 && updatedNote.Pos.Y > newBoard.NoteLimit {
+				continue
+			}
+			newActiveNotes = append(newActiveNotes, updatedNote)
+		}
+		newBoard.ActiveNotes = newActiveNotes
+	}
+
+	return newBoard
 }

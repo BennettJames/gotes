@@ -56,7 +56,16 @@ func (g *Keyboard) Add(freq float64) {
 	durT := float64(g.dur) / float64(time.Second)
 
 	// todo (bs): this fixed gain is pretty clumsy. It acts as something of a
-	// safeguard to ensure that
+	// safeguard to ensure that multiple notes can be played at the same time
+	// without overwhelming the volume. I'd kinda guess this should be more
+	// adaptive based on the number of concurrent notes - e.g. make a mapping
+	// like: 1 note -> 0.4 gain; 2 notes -> 0.35 gain each; 3 notes -> 0.28 gain
+	// each; 4 notes -> 0.25 gain each
+	//
+	// and have further notes have a fixed fraction of 1. This would need some
+	// good internal smarts about how to downscale past gains for existing notes;
+	// I'd say it'd require some better struct-based functions to make variability
+	// easier to manage.
 	w := AmplifyWave(Gain(0.4), PianoWave(g.dur, freq))
 
 	g.waves = append(g.waves, func(t float64) (float64, bool) {

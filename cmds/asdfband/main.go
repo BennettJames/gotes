@@ -21,7 +21,8 @@ func main() {
 	}
 	defer screen.Fini()
 
-	runErr := runRenderer(ctx, screen)
+	// runErr := runBasicRenderer(ctx, screen)
+	runErr := runComponentRenderer(ctx, screen)
 	if runErr != nil {
 		log.Print("Fatal error in render:", runErr)
 	}
