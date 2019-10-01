@@ -6,12 +6,6 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-func drawBoard(screen tcell.Screen, board Board, at Pos) {
-	for _, c := range board.Chars {
-		drawCellChar(screen, at.X+c.Pos.X, at.Y+c.Pos.Y, GetCellChar(c.Char), c.Color)
-	}
-}
-
 func drawCellChar(screen tcell.Screen, x, y int, c CellChar, color tcell.Color) {
 	for _, cell := range c.Cells {
 		// drawCellAt(screen, x+cell.X*2, y+cell.Y, color)

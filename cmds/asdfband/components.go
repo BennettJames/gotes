@@ -12,7 +12,7 @@ type (
 		Draw(dc DrawCell)
 	}
 
-	DrawCell func(x, y int, char rune, fg, bg tcell.Color)
+	DrawCell func(x, y int, c ScreenCell)
 
 	AreaComponent struct {
 		// note (bs): I suspect I should make some composite structures for
@@ -65,24 +65,21 @@ func (ac *AreaComponent) Draw(dc DrawCell) {
 					c = '▄'
 				}
 			}
-			dc(x, y, c, ac.BorderColor, ac.BgColor)
+			dc(x, y, ScreenCell{
+				Char: c,
+				FG:   ac.BorderColor,
+				BG:   ac.BgColor,
+			})
 		}
 	}
 
-	var dcWrap DrawCell = func(x, y int, char rune, fg, bg tcell.Color) {
-		if !ac.Overflow {
-			// todo (bs): forbid border overflow as well
-			if ac.Border {
-				if x < 1 || x >= ac.W-1 || y < 1 || y > ac.H-1 {
-					return
-				}
-			} else {
-				if x < 0 || x >= ac.W || y < 0 || y > ac.H {
-					return
-				}
-			}
+	var dcWrap DrawCell = offsetDrawCell(dc, ac.X, ac.Y)
+	if !ac.Overflow {
+		if ac.Border {
+			dcWrap = boundDrawCell(dcWrap, 1, 1, ac.W-1, ac.H-1)
+		} else {
+			dcWrap = boundDrawCell(dcWrap, 0, 0, ac.W, ac.H)
 		}
-		dc(x+ac.X, y+ac.Y, char, fg, bg)
 	}
 	for _, c := range ac.Children {
 		c.Draw(dcWrap)
@@ -106,45 +103,33 @@ func (tc *TextComponent) Draw(dc DrawCell) {
 		if tc.MaxHeight > 0 && y >= tc.Y+tc.MaxHeight {
 			break
 		}
-		dc(x, y, r, tc.TextColor, tc.BgColor)
+		dc(x, y, ScreenCell{
+			Char: r,
+			FG:   tc.TextColor,
+			BG:   tc.BgColor,
+		})
 		x++
 	}
 }
 
-func AreaWithPos(a AreaComponent, x, y int) AreaComponent {
-	newArea := a
-	newArea.X = x
-	newArea.Y = y
-	return newArea
+func boundDrawCell(
+	dc DrawCell,
+	// todo (bs): this is one of my bugbears in that it's a lot of args in a row
+	// with identical types and no real ordering. I've already said this, but I'd
+	// really like ot figure out a good way to structure the basic x/y/h/w
+	// structure, which I think could be applied here.
+	minX, minY, maxX, maxY int,
+) DrawCell {
+	return func(x, y int, c ScreenCell) {
+		if x < minX || x >= maxX || y < minY || y >= maxY {
+			return
+		}
+		dc(x, y, c)
+	}
 }
 
-func AreaWithSize(a AreaComponent, w, h int) AreaComponent {
-	newArea := a
-	newArea.W = w
-	newArea.H = h
-	return newArea
-}
-
-func AreaWithBgColor(a AreaComponent, bg tcell.Color) AreaComponent {
-	newArea := a
-	newArea.BgColor = bg
-	return newArea
-}
-
-func AreaWithBorder(a AreaComponent, border bool) AreaComponent {
-	newArea := a
-	newArea.Border = border
-	return newArea
-}
-
-func AreaWithBorderColor(a AreaComponent, bc tcell.Color) AreaComponent {
-	newArea := a
-	newArea.BorderColor = bc
-	return newArea
-}
-
-func TextComponentWithText(t TextComponent, text string) TextComponent {
-	newText := t
-	newText.Text = text
-	return newText
+func offsetDrawCell(dc DrawCell, xOff, yOff int) DrawCell {
+	return func(x, y int, c ScreenCell) {
+		dc(x+xOff, y+yOff, c)
+	}
 }

@@ -11,18 +11,14 @@ type (
 	GameStateManager struct {
 		l sync.RWMutex
 
+		lastTime time.Time
+
 		state GameState
 	}
 
 	GameState struct {
 		Offset Pos
-		Board  Board
-	}
-
-	Board struct {
-		// note (bs): I doubt this array is really good enough for further
-		// "mutability"; but it'll be ok for now.
-		Chars []BoardChar
+		Board  NoteBoard
 	}
 
 	BoardChar struct {
@@ -86,21 +82,6 @@ func NewGameStateManager() *GameStateManager {
 	return &GameStateManager{}
 }
 
-func (m *GameStateManager) AddChar(c BoardChar) {
-	m.l.Lock()
-	defer m.l.Unlock()
-
-	// note (bs): this starts running into an issue I've had before, which is how
-	// to properly handle nested objects in a single state manager. Let's sit on
-	// that question initially - just having one top level manager for events
-	// should be fine to start - but that is an important question I'd like some
-	// clarity on.
-	m.state = gameWithBoard(
-		m.state,
-		boardWithChar(m.state.Board, c),
-	)
-}
-
 func (m *GameStateManager) ModifyOffset(x, y int) {
 	m.l.Lock()
 	defer m.l.Unlock()
@@ -117,9 +98,38 @@ func (m *GameStateManager) State() GameState {
 	return m.state
 }
 
-func gameWithBoard(game GameState, b Board) GameState {
+func (m *GameStateManager) Tick(now time.Time) {
+	m.l.Lock()
+	defer m.l.Unlock()
+
+	// note (bs): I don't necessarily agree with the current design of this - it's
+	// kind of ad hoc grown between a few different styles. Still, this should
+	// work o.k. for now.
+
+	m.state = gameWithBoard(
+		m.state,
+		noteBoardUpdate(m.state.Board, now),
+	)
+}
+
+func (m *GameStateManager) SetNotes(now time.Time, notes []ScheduledNote) {
+	m.l.Lock()
+	defer m.l.Unlock()
+
+	m.state = gameWithBoard(
+		m.state,
+		NoteBoard{
+			StartTime:      now,
+			LastTime:       now,
+			NoteLimit:      32, // todo (bs): this really shouldn't be hard coded
+			ScheduledNotes: notes,
+		},
+	)
+}
+
+func gameWithBoard(game GameState, nb NoteBoard) GameState {
 	newGame := game
-	newGame.Board = b
+	newGame.Board = nb
 	return newGame
 }
 
@@ -127,12 +137,6 @@ func gameWithOffset(game GameState, offset Pos) GameState {
 	newGame := game
 	newGame.Offset = offset
 	return newGame
-}
-
-func boardWithChar(b Board, c BoardChar) Board {
-	newBoard := b
-	newBoard.Chars = append(b.Chars[:], c)
-	return newBoard
 }
 
 func charWithPos(c BoardChar, p Pos) BoardChar {
