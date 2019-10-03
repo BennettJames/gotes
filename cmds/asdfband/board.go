@@ -7,6 +7,15 @@ import (
 	"github.com/gdamore/tcell"
 )
 
+const (
+	// hitRange is the amount of time in either direction of the target time that
+	// a note can be played.
+	hitRange = 200 * time.Millisecond
+
+	// stepSize is how much time passes between each calculation of game state.
+	stepSize = 100 * time.Millisecond
+)
+
 type (
 	GameStateManager struct {
 		l sync.RWMutex
@@ -33,35 +42,31 @@ type (
 
 	NoteBoard struct {
 		StartTime, LastTime time.Time
+		Delay               time.Duration
 		Steps               int
 
 		PlaybackRate float64
-		NoteLimit    int
+		Score        int
 
-		// note (bs): not necessary quite yet, but there is also a two-handed
-		// version of this. Could of course try to
-
-		// how do I want to represent notes? Input will essentially consist of a
-		// "schedule" of notes - a list of notes, and when they should be played
-		// relative to the start.
-		//
-		// That can be done via times, but need not - the playback can be adjusted;
-		// though it's not a bad idea to have a built-in notion of times
 		ScheduledNotes []ScheduledNote
-
-		ActiveNotes []BoardChar
+		Columns        map[byte]NoteColumn
 	}
 
-	// so, thinking more about the underlying note structure here: I think there's
-	// really two things I need from them:
-	//
-	// - an underlying set of note information that is fixed; i.e. the actual keys
-	//
-	// - A dynamic set of keys. Velocity/direction is fixed; but they should start
-	// at (x, 0), and go down until y exceed height (let's populate a "range")
-	//
-	// I think the actual key presses in the end will just be based on the second;
-	// as they're the "interactive" portion of the data.
+	NoteColumn struct {
+		Char        byte
+		ActiveNotes []ColumnChar
+		Event       ColumnEvent
+	}
+
+	ColumnChar struct {
+		Offset time.Duration
+		Color  tcell.Color
+	}
+
+	ColumnEvent struct {
+		Type     string // one of "miss", "hit", or "noop"
+		GameTime time.Duration
+	}
 
 	ScheduledNote struct {
 		At time.Duration
@@ -112,19 +117,52 @@ func (m *GameStateManager) Tick(now time.Time) {
 	)
 }
 
-func (m *GameStateManager) SetNotes(now time.Time, notes []ScheduledNote) {
+func (m *GameStateManager) SetNotes(
+	now time.Time,
+	delay time.Duration,
+	notes []ScheduledNote,
+) {
+	m.l.Lock()
+	defer m.l.Unlock()
+	m.state = gameWithBoard(
+		m.state,
+		initializeBoard(now, delay, notes),
+	)
+}
+
+func (m *GameStateManager) KeyPress(now time.Time, char byte) bool {
 	m.l.Lock()
 	defer m.l.Unlock()
 
-	m.state = gameWithBoard(
-		m.state,
-		NoteBoard{
-			StartTime:      now,
-			LastTime:       now,
-			NoteLimit:      32, // todo (bs): this really shouldn't be hard coded
-			ScheduledNotes: notes,
-		},
+	column, hasColumn := m.state.Board.Columns[char]
+	if !hasColumn {
+		return false
+	}
+
+	gameTime := (time.Duration(m.state.Board.Steps) * stepSize) +
+		now.Sub(m.state.Board.LastTime)
+	newColumn := columnWithHit(
+		column,
+		gameTime,
 	)
+
+	// todo (bs): analyze time versus offsets to determine if event type should by
+	// "hit" or "noop". Arguably, that logic should be pushed down into an
+	// updater.
+	newState := gameWithBoard(
+		m.state,
+		boardWithColumn(m.state.Board, newColumn),
+	)
+	hit := len(column.ActiveNotes) > 0 &&
+		len(column.ActiveNotes) != len(newColumn.ActiveNotes)
+	if hit {
+		// todo (bs): eventually, this should be replaced with more precise grading
+		// of the hit.
+		newState.Board.Score++
+	}
+	m.state = newState
+
+	return hit
 }
 
 func gameWithBoard(game GameState, nb NoteBoard) GameState {
@@ -152,70 +190,122 @@ func updatePos(p Pos, x, y int) Pos {
 	return newPos
 }
 
-func noteBoardUpdate(noteB NoteBoard, now time.Time) NoteBoard {
-	stepSize := 100 * time.Millisecond
+func boardWithColumn(nb NoteBoard, nc NoteColumn) NoteBoard {
+	newBoard := nb
+	newColumns := map[byte]NoteColumn{}
+	for b, c := range nb.Columns {
+		if b != nc.Char {
+			newColumns[b] = c
+		}
+	}
+	newColumns[nc.Char] = nc
+	newBoard.Columns = newColumns
+	return newBoard
+}
 
+func columnCutoff(nc NoteColumn, gameTime time.Duration) NoteColumn {
+	newColumn := nc
+	newNotes := []ColumnChar{}
+	for _, n := range nc.ActiveNotes {
+		if n.Offset+hitRange > gameTime {
+			newNotes = append(newNotes, n)
+		}
+	}
+	newColumn.ActiveNotes = newNotes
+	if len(newNotes) != len(nc.ActiveNotes) {
+		newColumn.Event = ColumnEvent{
+			Type:     "miss",
+			GameTime: gameTime,
+		}
+	}
+	return newColumn
+}
+
+func columnWithHit(nc NoteColumn, gameTime time.Duration) NoteColumn {
+	newColumn := nc
+	// todo (bs): need to amend this to have better time tracking, either in this
+	// level or one up, to decide if the time has really been hit.
+	numNotes := len(nc.ActiveNotes)
+	if numNotes > 0 {
+		nextNote := nc.ActiveNotes[0]
+		if nextNote.Offset-hitRange <= gameTime &&
+			nextNote.Offset+hitRange >= gameTime {
+			newColumn.ActiveNotes = nc.ActiveNotes[1:]
+			newColumn.Event = ColumnEvent{
+				Type:     "hit",
+				GameTime: gameTime,
+			}
+			return newColumn
+		}
+	}
+	newColumn.Event = ColumnEvent{
+		Type:     "noop",
+		GameTime: gameTime,
+	}
+	return newColumn
+}
+
+func noteBoardUpdate(noteB NoteBoard, now time.Time) NoteBoard {
 	newBoard := noteB
 
-	rate := newBoard.PlaybackRate
-	if newBoard.PlaybackRate <= 0 {
-		rate = 1
-	}
-
 	for now.Sub(newBoard.LastTime) >= stepSize {
+		gameTime := (time.Duration(newBoard.Steps) * stepSize)
 
-		elapsed := newBoard.LastTime.Sub(newBoard.StartTime)
+		newCols := map[byte]NoteColumn{}
+		for b, c := range newBoard.Columns {
+			newCols[b] = columnCutoff(c, gameTime)
+		}
+		newBoard.Columns = newCols
+
+		// note (bs): I'd consider keeping "time indexing" like this and the actual
+		// state on different structural levels of the object.
 		newBoard.LastTime = newBoard.LastTime.Add(stepSize)
-
-		for _, sn := range newBoard.ScheduledNotes {
-			// todo (bs): let's add a "playback rate" that lets you adjust the speed
-
-			diff := elapsed - time.Duration(float64(sn.At)/rate)
-			if diff > 0 || diff <= -stepSize {
-				continue
-			}
-
-			x := 0
-			off := 7 // todo (bs): a little hacky, but real tempted to make this a global
-			switch sn.DispChar {
-			case 'A':
-				x = 0 * off
-			case 'S':
-				x = 1 * off
-			case 'D':
-				x = 2 * off
-			case 'F':
-				x = 3 * off
-			case 'J':
-				x = 4 * off
-			case 'K':
-				x = 5 * off
-			case 'L':
-				x = 6 * off
-			}
-
-			newBoard.ActiveNotes = append(newBoard.ActiveNotes, BoardChar{
-				Pos: Pos{
-					X: x,
-					Y: 0,
-				},
-				Color: randPastel(),
-				Char:  sn.DispChar,
-			})
-		}
-
-		// this may also need some notion of "cutoff", at which point a note is
-		// removed. Let's just hardcode it for now.
-		newActiveNotes := []BoardChar{}
-		for _, an := range newBoard.ActiveNotes {
-			updatedNote := charWithPos(an, updatePos(an.Pos, 0, 1))
-			if newBoard.NoteLimit > 0 && updatedNote.Pos.Y > newBoard.NoteLimit {
-				continue
-			}
-			newActiveNotes = append(newActiveNotes, updatedNote)
-		}
-		newBoard.ActiveNotes = newActiveNotes
+		newBoard.Steps++
 	}
 
 	return newBoard
+}
+
+func initializeBoard(
+	now time.Time,
+	delay time.Duration,
+	notes []ScheduledNote,
+) NoteBoard {
+
+	cols := map[byte]NoteColumn{}
+	// todo (bs): I think this array should be abstracted in some fashion. Nothing
+	// fancy; maybe just make a function that returns it somewhere and make that
+	// spot in the code responsible for the general rules surrounding
+	// keys<->notes.
+	for _, b := range []byte{'A', 'S', 'D', 'F', 'J', 'K', 'L'} {
+		// todo (bs): color selection should be more orderly, rather than purely
+		// random
+		chars := []ColumnChar{}
+		for _, sn := range notes {
+			if sn.DispChar != b {
+				continue
+			}
+			chars = append(chars, ColumnChar{
+				Offset: sn.At + delay,
+				Color:  randPastel(),
+			})
+		}
+
+		// note (bs): consider having some sort of "initialized event"; perhaps just
+		// have everything fade in.
+		newColumn := NoteColumn{
+			Char:        b,
+			ActiveNotes: chars,
+		}
+		cols[b] = newColumn
+	}
+
+	return NoteBoard{
+		StartTime:      now,
+		LastTime:       now,
+		Delay:          delay,
+		Score:          0,
+		ScheduledNotes: notes,
+		Columns:        cols,
+	}
 }

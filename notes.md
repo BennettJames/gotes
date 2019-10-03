@@ -106,3 +106,11 @@ some simple things, like:
 - Some simple piano tutorials, which may be useful if I want to expand the
   number/type of demos -
   http://www.piano-keyboard-guide.com/category/easy-piano-tutorials/
+
+- adaptive gain control -
+  https://www.eit.lth.se/fileadmin/eit/courses/etin80/2015/reports/adaptive_gain_control.pdf
+
+- synths inspired by tonewheel organs -
+  - http://www.stefanv.com/electronics/hammond_drawbar_science.html
+  - https://pure.qub.ac.uk/portal/files/124461591/Modal_Processor_Effects_Inspired_by_Hammond_Tonewheel_Organs.pdf
+  - https://electricdruid.net/technical-aspects-of-the-hammond-organ/
