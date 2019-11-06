@@ -131,16 +131,15 @@ func main() {
 	// parallelize vs wrap, that isn't well settled.
 
 	wave = gotes.AmplifyWave(
-		// gotes.AttackAndDecay(2.0, 6.0),
 		gotes.FixedAmplify(1.0),
 		gotes.IntegrateWave(
 			gotes.MultiplyTime(gotes.NoteA3),
-			func(t float64) float64 {
-				return gotes.BasicPianoWave(t)
-				// return 0.2*math.Sin(8*math.Pi*t) +
-				// 	0.8*math.Sin(8*math.Pi*t)*(1.01+0.99*math.Cos(2*math.Pi*t))/2
-				// return math.Cos(2*math.Pi*t) + math.Pow(math.Sin(2*math.Pi*t), 2)/2
-			},
+			gotes.BasicPianoWave,
+			// func(t float64) float64 {
+			// return 0.2*math.Sin(8*math.Pi*t) +
+			// 	0.8*math.Sin(8*math.Pi*t)*(1.01+0.99*math.Cos(2*math.Pi*t))/2
+			// return math.Cos(2*math.Pi*t) + math.Pow(math.Sin(2*math.Pi*t), 2)/2
+			// },
 		),
 	)
 

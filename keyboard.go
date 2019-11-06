@@ -11,7 +11,7 @@ type Keyboard struct {
 
 	l sync.Mutex
 
-	waves        []WaveFFn
+	waves        []FiniteWaveFn
 	totalSamples int
 }
 
@@ -39,7 +39,7 @@ func (g *Keyboard) Stream(samples [][2]float64) {
 	}
 
 	t := float64(g.totalSamples) / float64(g.sr)
-	newWaves := []WaveFFn{}
+	newWaves := []FiniteWaveFn{}
 	for _, w := range g.waves {
 		if _, done := w(t); !done {
 			newWaves = append(newWaves, w)

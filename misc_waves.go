@@ -38,6 +38,9 @@ func AttackAndDecay(
 	durT float64,
 	dampen float64,
 ) AmpFn {
+	// todo (bs): let's see about changing this into a finite wave. Also - I
+	// suspect I want to create some helpers for that; as to make it easy to
+	// coerce finite and non-finite waves together.
 	attackT := 0.002
 	durT = math.Max(attackT*2, durT)
 	return func(t float64) float64 {
