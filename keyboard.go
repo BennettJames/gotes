@@ -66,7 +66,7 @@ func (g *Keyboard) Add(freq float64) {
 	// good internal smarts about how to downscale past gains for existing notes;
 	// I'd say it'd require some better struct-based functions to make variability
 	// easier to manage.
-	w := AmplifyWave(Gain(0.4), PianoWave(g.dur, freq))
+	w := AmplifyWave(Gain(0.4), PianoNote(g.dur, freq))
 
 	g.waves = append(g.waves, func(t float64) (float64, bool) {
 		if t > baseT+durT {

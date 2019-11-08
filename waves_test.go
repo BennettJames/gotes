@@ -7,7 +7,7 @@ import (
 )
 
 func Test_PianoWave(t *testing.T) {
-	wave := PianoWave(2000*time.Millisecond, NoteA4)
+	wave := PianoNote(2000*time.Millisecond, NoteA4)
 
 	fmt.Println(wave(3))
 }

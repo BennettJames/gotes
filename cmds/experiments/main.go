@@ -42,7 +42,7 @@ func main() {
 
 	// wave = gotes.WeirdWave1(gotes.NoteA3)
 
-	wave = gotes.PianoWave(2000*time.Millisecond, gotes.NoteA4)
+	wave = gotes.PianoNote(2000*time.Millisecond, gotes.NoteA4)
 
 	wave = gotes.PeriodicSinWave(10*time.Second, gotes.NoteA1, gotes.NoteA4)
 	wave = gotes.MistakenPeriodicSinWave(10*time.Second, gotes.NoteA1, gotes.NoteA4)
@@ -86,7 +86,7 @@ func main() {
 		gotes.SinWave(gotes.NoteC4),
 	)
 
-	wave = gotes.PianoWave(2000*time.Millisecond, gotes.NoteA3)
+	wave = gotes.PianoNote(2000*time.Millisecond, gotes.NoteA3)
 
 	wave = gotes.WeirdPianoWave(2000*time.Millisecond, gotes.NoteA3)
 
@@ -132,15 +132,7 @@ func main() {
 
 	wave = gotes.AmplifyWave(
 		gotes.FixedAmplify(1.0),
-		gotes.IntegrateWave(
-			gotes.MultiplyTime(gotes.NoteA3),
-			gotes.BasicPianoWave,
-			// func(t float64) float64 {
-			// return 0.2*math.Sin(8*math.Pi*t) +
-			// 	0.8*math.Sin(8*math.Pi*t)*(1.01+0.99*math.Cos(2*math.Pi*t))/2
-			// return math.Cos(2*math.Pi*t) + math.Pow(math.Sin(2*math.Pi*t), 2)/2
-			// },
-		),
+		gotes.PianoWave(gotes.NoteA3),
 	)
 
 	kb := gotes.NewKeyboard(sr, 2000*time.Millisecond)

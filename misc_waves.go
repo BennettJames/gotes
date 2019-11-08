@@ -5,23 +5,33 @@ import (
 	"time"
 )
 
-// PianoWave creates a piano-like note at the given frequency over the time
+func FinitePianoNote(dur time.Duration, freq float64) WaveFn {
+
+	panic("not implemented")
+}
+
+// PianoNote creates a piano-like note at the given frequency over the time
 // period.
-func PianoWave(dur time.Duration, freq float64) WaveFn {
+func PianoNote(dur time.Duration, freq float64) WaveFn {
 	durT := float64(dur) / float64(time.Second)
 	dampen := math.Pow(0.5*math.Log(freq*0.3), 2)
 	return AmplifyWave(
 		AttackAndDecay(durT, dampen),
-		IntegrateWave(
-			MultiplyTime(freq),
-			BasicPianoWave,
-		),
+		PianoWave(freq),
 	)
 }
 
-// BasicPianoWave creates a waveform with a degree of internal resonance that
+// PianoWave creates a piano-wave structure at the given frequency.
+func PianoWave(freq float64) WaveFn {
+	return IntegrateWave(
+		MultiplyTime(freq),
+		BasicPianoFn,
+	)
+}
+
+// BasicPianoFn creates a waveform with a degree of internal resonance that
 // can be shaped to sound somewhat piano-like.
-func BasicPianoWave(t float64) float64 {
+func BasicPianoFn(t float64) float64 {
 	// note (bs): fundamentally, I think this is very similar to a tonewheel organ
 	// note. Let's see if I can figure out the internals for that, and perhaps
 	// generalize this.
