@@ -22,7 +22,7 @@ func main() {
 	var streamer gotes.BiStreamer
 	var _ = streamer
 
-	wave = gotes.LinearFadeLooperWave(
+	wave = gotes.LinearFadeLooper(
 		250*time.Millisecond,
 		2*time.Millisecond,
 		gotes.SinWave(gotes.NoteA1),
@@ -32,7 +32,7 @@ func main() {
 		gotes.SinWave(gotes.NoteA5),
 	)
 
-	wave = gotes.ExpFadeLooperWave(
+	wave = gotes.ExpFadeLooper(
 		1000*time.Millisecond, 1000*time.Millisecond,
 		gotes.SinWave(gotes.NoteA2),
 		gotes.SinWave(gotes.NoteA5),
@@ -47,7 +47,7 @@ func main() {
 	wave = gotes.PeriodicSinWave(10*time.Second, gotes.NoteA1, gotes.NoteA4)
 	wave = gotes.MistakenPeriodicSinWave(10*time.Second, gotes.NoteA1, gotes.NoteA4)
 
-	wave = gotes.LinearFadeLooperWave(
+	wave = gotes.LinearFadeLooper(
 		250*time.Millisecond,
 		150*time.Millisecond,
 		gotes.SinWave(gotes.NoteF4),
@@ -60,7 +60,7 @@ func main() {
 		gotes.SinWave(gotes.NoteC4),
 	)
 
-	wave = gotes.ExpFadeLooperWave(
+	wave = gotes.ExpFadeLooper(
 		250*time.Millisecond,
 		150*time.Millisecond,
 		gotes.SinWave(gotes.NoteF4),
@@ -73,7 +73,7 @@ func main() {
 		gotes.SinWave(gotes.NoteC4),
 	)
 
-	wave = gotes.SigmoidFadeLooperWave(
+	wave = gotes.SigmoidFadeLooper(
 		250*time.Millisecond,
 		100*time.Millisecond,
 		gotes.SinWave(gotes.NoteF4),
@@ -134,6 +134,60 @@ func main() {
 		gotes.FixedAmplify(1.0),
 		gotes.PianoWave(gotes.NoteA3),
 	)
+
+	wave = gotes.AmplifyWave(
+		gotes.FixedAmplify(0.5),
+		// let's see if this construction could be decoupled from frequency; e.g.
+		// take two fn's rather than two notes.
+		//
+		// Well, it might not quite be that simple.
+		gotes.PeriodicSinWave(
+			1*time.Second,
+			gotes.NoteA3,
+			gotes.NoteA4,
+		),
+	)
+
+	wave = gotes.AmplifyWave(
+		gotes.FixedAmplify(0.5),
+		gotes.IntegrateWave(
+			func(t float64) float64 {
+				// so - I *suspect* that if I'm clever with calculating ratios here; I
+				// can achieve what the original was doing much more directly.
+				//
+				// alright; so this gets the period right. Now I want to make the ratio
+				// adjustable. My preference is to always make the "floor" 1, and so the
+				// given amount is strictly >= 1 and determines the max rate.
+				return 1.5*t + math.Sin(t*2*math.Pi)/(4*math.Pi)
+			},
+			gotes.IntegrateWave(
+				gotes.MultiplyTime(gotes.NoteA3),
+				gotes.BasicSinFn,
+			),
+		),
+	)
+
+	// math.Sin(t * 2 * math.PI) / 2 + 0.5
+
+	// just as another reminder; there was one other thing I wanted to experiment
+	// with in terms of alternation - shifting directly between two wave forms of
+	// identical frequency. Zooming into the mix functions - what I'd guess I'd
+	// want to to create a "cyclic mixer" rather than a "plain mixer". That can be
+	// done by
+
+	wave = gotes.AmplifyWave(
+		gotes.FixedAmplify(0.3),
+		func(t float64) float64 {
+
+			v1 := gotes.SinWave(gotes.NoteA3)(t)
+			v2 := gotes.SquareWave(gotes.NoteA3)(t)
+			return gotes.LinearMix(
+				math.Sin(t*2*math.Pi*16)/2+0.5,
+				v1, v2)
+		},
+	)
+
+	streamer = gotes.StreamerFromWave(sr, wave)
 
 	kb := gotes.NewKeyboard(sr, 2000*time.Millisecond)
 	go func() {

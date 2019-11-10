@@ -17,9 +17,23 @@ bin/gensamples:
 	go build -o bin/gensamples ./cmds/gensamples
 
 #
+# Builds experiments, a random set of extended audio experiments.
+#
+.PHONY: bin/experiments
+bin/experiments:
+	go build -o bin/experiments ./cmds/experiments
+
+#
 # Generates a set of samples that are used in the readme. Output is written to
 # "doc", where they can be included in documentation.
 #
-.PHONY: gen-samples
-gen-samples: bin/gensamples
+.PHONY: run-gensamples
+run-gensamples: bin/gensamples
 	bin/gensamples -dir doc
+
+#
+# Executes the experiments.
+#
+.PHONY: run-experiments
+run-experiments: bin/experiments
+	bin/experiments

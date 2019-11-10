@@ -9,15 +9,16 @@ type streamerWave struct {
 	totalSamples int
 }
 
-func (s *streamerWave) Stream(samples []float64) {
+func (s *streamerWave) Stream(samples [][2]float64) {
 	for i := range samples {
 		t := float64(s.totalSamples) / float64(s.sr)
-		samples[i] = s.fn(t)
+		v := s.fn(t)
+		samples[i][0], samples[i][1] = v, v
 		s.totalSamples++
 	}
 }
 
-func StreamerFromWave(sr SampleRate, fn WaveFn) Streamer {
+func StreamerFromWave(sr SampleRate, fn WaveFn) BiStreamer {
 	return &streamerWave{
 		sr: sr,
 		fn: fn,

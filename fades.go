@@ -5,34 +5,41 @@ import (
 	"time"
 )
 
-// LinearFadeLooperWave will swap through the provided set of wave functions,
+// LinearFadeLooper will swap through the provided set of wave functions,
 // playing each one for "dur" amount of time and transitioning in time "fade".
 // It uses an linear transition function between waves.
-func LinearFadeLooperWave(
+func LinearFadeLooper(
 	dur, fade time.Duration,
 	fns ...WaveFn,
 ) WaveFn {
-	return genericFadeLooperWave(dur, fade, linMix, fns...)
+	return genericFadeLooper(dur, fade, LinearMix, fns...)
 }
 
-// ExpFadeLooperWave will swap through the provided set of wave functions,
+// ExpFadeLooper will swap through the provided set of wave functions,
 // playing each one for "dur" amount of time and transitioning in time "fade".
 // It uses an exponential transition function between waves.
-func ExpFadeLooperWave(
+func ExpFadeLooper(
 	dur, fade time.Duration,
 	fns ...WaveFn,
 ) WaveFn {
-	return genericFadeLooperWave(dur, fade, expMix, fns...)
+	return genericFadeLooper(dur, fade, ExpMix, fns...)
 }
 
-func SigmoidFadeLooperWave(
+func SinFadeLooper(
 	dur, fade time.Duration,
 	fns ...WaveFn,
 ) WaveFn {
-	return genericFadeLooperWave(dur, fade, sigmoidMix, fns...)
+	return genericFadeLooper(dur, fade, SinMix, fns...)
 }
 
-func genericFadeLooperWave(
+func SigmoidFadeLooper(
+	dur, fade time.Duration,
+	fns ...WaveFn,
+) WaveFn {
+	return genericFadeLooper(dur, fade, SigmoidMix, fns...)
+}
+
+func genericFadeLooper(
 	dur, fade time.Duration,
 	mix func(t float64, v1, v2 float64) float64,
 	fns ...WaveFn,
@@ -55,41 +62,34 @@ func genericFadeLooperWave(
 	}
 }
 
-// linMix blends v1 and v2 based on the time value. It's v1 for t<0, v2 for t>1,
+// LinearMix blends v1 and v2 based on the time value. It's v1 for t<0, v2 for t>1,
 // and a linear transition between the two from 0->1.
-func linMix(t float64, v1, v2 float64) float64 {
+func LinearMix(t float64, v1, v2 float64) float64 {
 	per := math.Min(1, math.Max(0, t))
 	fadeOut := 1 - per
 	fadeIn := per
 	return v1*fadeOut + v2*fadeIn
 }
 
-// expMix blends v1 and v2 based on the time value. It's v1 for t<0, v2 for t>1,
+// ExpMix blends v1 and v2 based on the time value. It's v1 for t<0, v2 for t>1,
 // and an exponential transition in 0->1.
-func expMix(t float64, v1, v2 float64) float64 {
+func ExpMix(t float64, v1, v2 float64) float64 {
 	c := 0.1 // note (bs) - technically, this could be made configurable.
 	fadeOut := (1 / (1 - c)) * (math.Pow(c, t) - c)
 	fadeIn := 1 - fadeOut
 	return fadeOut*v1 + fadeIn*v2
 }
 
-func sinMix(t float64, v1, v2 float64) float64 {
+func SinMix(t float64, v1, v2 float64) float64 {
 	t = math.Min(1, math.Max(0, t))
 	fadeOut := (math.Cos(t*math.Pi) + 1) / 2
 	fadeIn := 1 - fadeOut
 	return v1*fadeOut + v2*fadeIn
 }
 
-func sigmoidMix(t float64, v1, v2 float64) float64 {
+func SigmoidMix(t float64, v1, v2 float64) float64 {
 	t = math.Min(1, math.Max(0, t))
 	fadeIn := 1 / (1 + math.Pow(math.E, 6-12*t))
 	fadeOut := 1 - fadeIn
 	return v1*fadeOut + v2*fadeIn
-
-	// note - other than the popping, the inverse here was kinda interesting.
-	// Could I do somehting similar w/out popping? Basically, that would mean
-	// rapid inversion, then coming back up.
-	//
-	// I think rather than do anything now, I'll just make note that being able
-	// to more minutely vary and mix notes would be nice.
 }

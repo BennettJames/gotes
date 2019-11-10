@@ -7,6 +7,9 @@ Design-wise, there is a strong emphasis on immutable function composition to
 achieve synthesis. It's not terribly practical, but leads to very easy and
 obvious composition.
 
+```go
+
+```
 
 (todo [bs]: to avoid boring the reader under a wall of explanation before
 getting anywhere; let's include a sampler API that hits a few key elements,
@@ -16,6 +19,9 @@ along with a sound sample. I'd say maybe just something simple like )
 // todo (bs): this api is more theoretical than practical right now; let's
 // adapt what I need to make it work. Unfortunately, this'll probably get into
 // a broader issue.
+//
+// Alright, let's turn this into something else. Perhaps just some chained
+// oscillators.
 gotes.Looper(
   PianoNote(2 * time.Second, gotes.NoteA3),
   PianoNote(2 * time.Second, gotes.NoteF3),
