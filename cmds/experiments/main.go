@@ -187,8 +187,6 @@ func main() {
 		},
 	)
 
-	streamer = gotes.StreamerFromWave(sr, wave)
-
 	kb := gotes.NewKeyboard(sr, 2000*time.Millisecond)
 	go func() {
 		twinkleNotes := []float64{
@@ -221,7 +219,7 @@ func main() {
 	}()
 	streamer = kb
 
-	speaker := gotes.NewSpeaker(sr, streamer, sr.N(100*time.Millisecond))
+	speaker := gotes.NewSpeaker(sr, streamer, sr.N(200*time.Millisecond))
 	log.Fatal(speaker.Run(ctx))
 }
 

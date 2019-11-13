@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-func FinitePianoNote(dur time.Duration, freq float64) WaveFn {
-
-	panic("not implemented")
-}
-
 // PianoNote creates a piano-like note at the given frequency over the time
 // period.
 func PianoNote(dur time.Duration, freq float64) WaveFn {
@@ -25,7 +20,7 @@ func PianoNote(dur time.Duration, freq float64) WaveFn {
 func PianoWave(freq float64) WaveFn {
 	return IntegrateWave(
 		MultiplyTime(freq),
-		BasicPianoFn,
+		lookupPiano,
 	)
 }
 
