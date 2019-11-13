@@ -5,6 +5,24 @@ import (
 	"time"
 )
 
+// Looper will swap through the provided set of wave functions, playing each one
+// for "dur" amount of time. There is no transition; so unless the wave
+// functions themselves blend well this can easily lead to popping.
+func Looper(
+	dur time.Duration,
+	fns ...WaveFn,
+) WaveFn {
+	if len(fns) == 0 {
+		return ZeroWave()
+	}
+	durT := float64(dur) / float64(time.Second)
+	return func(t float64) float64 {
+		nextI := (int(t/durT) + len(fns)) % len(fns)
+		t = math.Mod(t, durT) // note (bs): inefficient
+		return fns[nextI](t)
+	}
+}
+
 // LinearFadeLooper will swap through the provided set of wave functions,
 // playing each one for "dur" amount of time and transitioning in time "fade".
 // It uses an linear transition function between waves.

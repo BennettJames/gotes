@@ -1,5 +1,10 @@
 # Gotes
 
+_**Author's note** - unfortunately, github does not allow embedding of sound
+files in a readme. A few examples are linked that can be downloaded and played
+back. At a latter date, I will try to port this to a github page, which should
+allow direct audio embedding._
+
 [![GoDoc](https://godoc.org/github.com/BennettJames/gotes?status.svg)](https://godoc.org/github.com/BennettJames/gotes)
 
 Gotes ("go notes") is a just-for-fun, simple sound synthesis library for Go.
@@ -7,101 +12,122 @@ Design-wise, there is a strong emphasis on immutable function composition to
 achieve synthesis. It's not terribly practical, but leads to very easy and
 obvious composition.
 
-```go
+Detailed usage and explanation will follow; but here's a quick, complete example
+of gotes being used to play a simple set of piano-like notes:
 
+```go
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/bennettjames/gotes"
+)
+
+func main() {
+	const (
+		sampleRate   = gotes.SampleRate(48000)
+		speakerCache = 100 * time.Millisecond
+		noteDuration = 2000 * time.Millisecond
+	)
+
+	wave := gotes.Looper(
+		time.Second,
+		gotes.PianoNote(noteDuration, gotes.NoteA3),
+		gotes.PianoNote(noteDuration, gotes.NoteB3),
+		gotes.PianoNote(noteDuration, gotes.NoteG4),
+		gotes.PianoNote(noteDuration, gotes.NoteF4),
+  )
+
+	streamer := gotes.StreamerFromWave(sampleRate, wave)
+	speaker := gotes.NewSpeaker(sampleRate, streamer, sampleRate.N(speakerCache))
+	log.Fatal(speaker.Run(context.Background()))
+}
 ```
 
-(todo [bs]: to avoid boring the reader under a wall of explanation before
-getting anywhere; let's include a sampler API that hits a few key elements,
-along with a sound sample. I'd say maybe just something simple like )
+
+## Dependencies; Compatibility; Stability
+
+Gotes is based on [oto](oto), a cross-platform Go library that dynamically links
+platform-specific audio libraries. There can be platform specific requirements
+for oto; I recommend viewing it's project page for help setting up any
+dependencies.
+
+This was primarily developed on an old mac mini; it should be portable to other
+platforms but has not been thoroughly tested.
+
+This is very much an experimental library; so the API is not terribly stable.
+
+## Digital Sound Refresher
+
+A quick, simple review of how sound works, for those who might not know or just
+haven't thought much about it recently -
+
+Sound is essentially a wave of rapid, tiny fluctuations in air pressure. A
+computer speaker can create sound by rapidly vibrating it's diaphragm back and
+forth, creating particular waves of high and low pressure that our ears map to
+the sounds we all know and love.
+
+To control the speaker, the computer sends tens of thousands of discrete values
+to the speaker a second. These are all single values that describe the
+underlying wave. They are not continuous; they are just *samples* at various
+points that come close enough to representing the underlying sound for the
+speaker to convincingly play.
+
+## Basics of Wave Composition in Gotes
+
+In gotes, the fundamental unit of sound is a _wave function_. This is a simple
+function that maps a time argument to a sample. Time proceeds from 0, and goes
+up by 1 for every second that passes. Samples are all in the range of -1 to 1.
+
+To start, let's define the simplest wave possible: a basic sine wave. It starts
+at zero; goes up to 1; down to -1; and back to zero once every second -
 
 ```go
-// todo (bs): this api is more theoretical than practical right now; let's
-// adapt what I need to make it work. Unfortunately, this'll probably get into
-// a broader issue.
-//
-// Alright, let's turn this into something else. Perhaps just some chained
-// oscillators.
-gotes.Looper(
-  PianoNote(2 * time.Second, gotes.NoteA3),
-  PianoNote(2 * time.Second, gotes.NoteF3),
+func BasicSinFn(t float64) float64 {
+	return math.Sin(2 * math.Pi * t)
+}
+```
+
+This is quite slow - only 1 hz, which can't be heard by the human ear. We'd need
+to increase the speed of the wave to actually hear it. In gotes, that's done by
+applying a _time function_. A wave function maps a time value to a sample value;
+a time function maps one time value to another.
+
+Gotes composes time functions and wave functions together using `IntegrateWave`.
+This takes two arguments - a time function and a wave function. It returns a new
+wave function, where the given time argument is first passed to the time
+function, then that value is given to the wave function.
+
+If we want to say boost this wave up to a audible frequency, we can apply a
+constant multiplier to the time wave -
+
+
+```go
+func SinWave(frequency float64) WaveFn {
+  return IntegrateWave(
+    MultiplyTime(frequency),
+    BasicSinFn,
+  )
+}
+```
+
+Note that this is still just returning a wave function. If we'd like, we could
+apply `IntegrateWave` all over again. For instance; here's a usage of `SinWave`
+that will oscillate the frequency between 220 and 440 -
+
+```go
+IntegrateWave(
+  func(t float64) float64 {
+		return 1.5*t + math.Sin(t*2*math.Pi)/(4*math.Pi)
+  },
+  SinWave(220),
 )
 ```
 
-
-## Dependencies & Compatibility
-
-Gotes is based on [oto](oto), a cross-platform Go library that dynamically links
-platform-specific audio libraries. This was developed on an old mac mini; it
-should be portable to other platforms but has not been thoroughly tested.
-
-
-## Basics of Sound Waves
-
-(note [bs]: I absolutely support doing a few sentences on the basic structure of
-sound)
-
-Here's a quick review of how sound works, for those who might not know or just
-haven't thought much about it recently.
-
-A quick refresher on sound: sound is just a wave.
-
-
-rapid, tiny fluctuations in sound pressure.
-
-
-
- transmitted in tiny, rapid variations in
-air pressure. For a computer to play back a sound,
-
-
-The speaker then plays backs these
-
-diaphragm
-
-
-To play back sound, a digital wave is encoded that that rapidly oscillates with
-small variations. Here is a simple sine
-
-(record and insert .wav of a3 sine wave here)
-
-Here is a set of some other simple waves
-
-(todo [bs]: let's get smaller, plainer images of the waves here)
-
-| Wave Type | Wave Form                                           | Sample |
-| :---:     |   :---:                                             | :---:  |
-| Sine      | ![sin](doc/sin-sample.png)                          | (todo) |
-| Sawtooth  | ![sawtooth](doc/sawtooth-sample.png)                | (todo) |
-| Triangle  | ![triangle](doc/triangle-sample.png)                | (todo) |
-| Square    | ![square](doc/square-sample.png)                    | (todo) |
-
-
-Different waves
-
-(todo [bs]: let's include some description of using waves here. I'd argue in
-favor of perhaps even getting the finite composition API together here, and
-having a quick example with fadeout between the different types of waves)
-
-
-
-## Composing Gote Functions
-
-
-
-
-
-
-
-
-
-(todo [bs]: let's at least *try* to create a simple wasm example. Don't spend
-too long on it - honestly I'd say create a plan, try to execute it within ten
-minutes, then if you don't have a result decide whether it's worth continuing.)
-
-(todo [bs]: let's also try to staple wav generation to this. There's )
-
-
+Anyway: that's the basics of gotes. There are many other waves and modifier
+functions; head over to the [docs](docs) to see them all.
 
 
 [oto]:https://github.com/hajimehoshi/oto
+[docs]:https://godoc.org/github.com/BennettJames/gotes

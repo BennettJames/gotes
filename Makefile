@@ -37,3 +37,17 @@ run-gensamples: bin/gensamples
 .PHONY: run-experiments
 run-experiments: bin/experiments
 	bin/experiments
+
+#
+# Builds experiments, a random set of extended audio experiments.
+#
+.PHONY: bin/basicexample
+bin/basicexample:
+       go build -o bin/basicexample ./cmds/basicexample
+
+#
+# Executes the basicexample.
+#
+.PHONY:run-basicexample
+run-basicexample: bin/basicexample
+       bin/basicexample
