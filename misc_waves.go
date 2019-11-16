@@ -90,6 +90,37 @@ func PeriodicSinWave(cycle time.Duration, f1, f2 float64) WaveFn {
 	)
 }
 
+// OscillateTime creates a time function that varies how "fast" it moves.
+// "peakAccel" is the peak rate it reached (e.g. peakAccel of 1.0 -> 100% as
+// fast as normal; 0.0 -> constant rate); period is the time between
+func OscillateTime(peakAccel, period float64) TimeFn {
+	c1 := 1 + (peakAccel / 2)
+	c2 := peakAccel / (4 * math.Pi * period)
+	return func(t float64) float64 {
+		return c1*t - c2*CacheInterpolateLookup(sinWaveCache, period*t)
+	}
+}
+
+// BadOscillateTime an incorrect time oscillator that sounds really interesting.
+func BadOscillateTime(peakAccel, period float64) TimeFn {
+	// todo (bs): let's see if I can inline cacheV here. "mistakes" like this
+	// which are too dependent on sub-behavior like that can accidentally
+	// disappear.
+	return func(t float64) float64 {
+		cacheV := CacheDirectLookup(sinWaveCache, period*t)
+		return (1+(peakAccel/2))*t - peakAccel/(4*math.Pi*period)*cacheV
+	}
+}
+
+// BadOscillateTime2 is another incorrect time oscillator that sounds really
+// interesting.
+func BadOscillateTime2(peakAccel, period float64) TimeFn {
+	return func(t float64) float64 {
+		cacheV := CacheDirectLookup(sinWaveCache, 2*math.Pi*period*t)
+		return (1+(peakAccel/2))*t - peakAccel/(4*math.Pi*period)*cacheV
+	}
+}
+
 // SinTime is a time function that varies the rate of change according to a sin
 // wave. The rate varies between low and high in each period.
 func SinTime(low, high, period float64) TimeFn {

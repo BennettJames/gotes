@@ -22,7 +22,7 @@ func NewKeyboard(sr SampleRate, dur time.Duration) *Keyboard {
 	}
 }
 
-func (g *Keyboard) Stream(samples [][2]float64) {
+func (g *Keyboard) Stream(samples []float64) {
 	g.l.Lock()
 	defer g.l.Unlock()
 
@@ -34,7 +34,7 @@ func (g *Keyboard) Stream(samples [][2]float64) {
 			waveV, _ := w(t)
 			v += waveV
 		}
-		samples[i][0], samples[i][1] = v, v
+		samples[i] = v
 		g.totalSamples++
 	}
 

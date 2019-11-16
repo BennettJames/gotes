@@ -1,6 +1,7 @@
 package gotes
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func Benchmark_cacheLookups(b *testing.B) {
 	fn := BasicSinFn
 
 	// This benchmark test several different ways of performing lookups on
-	// iterpolated caches. The best-performing is the one that's actually used.
+	// interpolated caches. The best-performing is the one that's actually used.
 
 	b.Run("interpolate", func(b *testing.B) {
 		// This tests whether injecting the size versus looking it up incurs
@@ -230,6 +231,34 @@ func Benchmark_cacheLookups(b *testing.B) {
 	})
 }
 
+func Test_newRMSE(t *testing.T) {
+	const freq = NoteA3
+	const cacheSize = 128
+	const sr = float64(48_000)
+	const stepFloat = float64(time.Second) / sr
+
+	fn := BasicSinFn
+
+	cache := benchBuildCache(fn, cacheSize)
+
+	rmse1 := CalcWaveRMSE(
+		fn,
+		func(t float64) float64 {
+			return interCacheLookupOpt3(cache, t)
+		},
+		int(sr),
+	)
+	rmse2 := CalcWaveRMSE(
+		fn,
+		func(t float64) float64 {
+			return fixedCacheLookupOpt2(cache, t)
+		},
+		int(sr),
+	)
+	fmt.Println("@@@ error rate is: ", rmse1, rmse2)
+
+}
+
 // benchBuildCache creates a cache of the specific size from the wave function. There
 // is one extra value on the end that's equal to the first; that makes wrapping
 // interpolation easier and less error prone.
@@ -269,8 +298,10 @@ func interCacheLookupOpt1(
 	t float64,
 ) float64 {
 	t = t - float64(int(t))
-	i := int(t * float64(size))
-	return cache[i]*(1-t) + cache[i+1]*(t)
+	floatI := t * float64(size)
+	i := int(floatI)
+	amt := floatI - float64(i)
+	return cache[i]*(1-amt) + cache[i+1]*(amt)
 }
 
 // interCacheLookupOpt2 is as #1, but with negative protection for t.
@@ -280,8 +311,10 @@ func interCacheLookupOpt2(
 ) float64 {
 	size := len(cache) - 1
 	t = t - float64(int(t))
-	i := int(t * float64(size))
-	return cache[i]*(1-t) + cache[i+1]*(t)
+	floatI := t * float64(size)
+	i := int(floatI)
+	amt := floatI - float64(i)
+	return cache[i]*(1-amt) + cache[i+1]*(amt)
 }
 
 // interCacheLookupOpt3 is as #2, but with inline size calculation.
@@ -291,8 +324,10 @@ func interCacheLookupOpt3(
 ) float64 {
 	size := len(cache) - 1
 	t = benchNormT(t)
-	i := int(t * float64(size))
-	return cache[i]*(1-t) + cache[i+1]*(t)
+	floatI := t * float64(size)
+	i := int(floatI)
+	amt := floatI - float64(i)
+	return cache[i]*(1-amt) + cache[i+1]*(amt)
 }
 
 // interCacheLookupOpt4 perfoms it's own size calculation and determines values
@@ -316,8 +351,10 @@ func interCacheLookupOpt5(
 ) float64 {
 	size := len(cache) - 1
 	t = math.Mod(t, 1)
-	i := int(t * float64(size))
-	return cache[i]*(1-t) + cache[i+1]*(t)
+	floatI := t * float64(size)
+	i := int(floatI)
+	amt := floatI - float64(i)
+	return cache[i]*(1-amt) + cache[i+1]*(amt)
 }
 
 // interCacheLookupOpt6 makes use of 16-bit cache size.
@@ -328,8 +365,10 @@ func interCacheLookupOpt6(
 	const intInv float64 = 1.0 / math.MaxInt16
 	size := len(cache) - 1
 	t = benchNormT(t)
-	i := int(t * float64(size))
-	return float64(cache[i])*(1-t)*intInv + float64(cache[i+1])*(t)*intInv
+	floatI := t * float64(size)
+	i := int(floatI)
+	amt := floatI - float64(i)
+	return float64(cache[i])*(1-amt)*intInv + float64(cache[i+1])*(amt)*intInv
 }
 
 // fixedCacheLookupOpt1 does a basic resolution of a value without interpolation
@@ -393,8 +432,10 @@ func interCacheWrapper(
 	cache[size] = cache[0] // wraparound for easier lookups
 	return func(t float64) float64 {
 		t = benchNormT(t)
-		i := int(t * float64(size))
-		return cache[i]*(1-t) + cache[i+1]*(t)
+		floatI := t * float64(size)
+		i := int(floatI)
+		amt := floatI - float64(i)
+		return cache[i]*(1-amt) + cache[i+1]*(amt)
 	}
 }
 
@@ -440,4 +481,130 @@ func benchGetRMSE(
 		errSum += math.Pow(actualFn(t)-approxFn(t), 2)
 	}
 	return math.Sqrt(errSum / float64(numSamples))
+}
+
+func Benchmark_Oscillate(b *testing.B) {
+
+	const sr = float64(48_000)
+	const stepFloat = float64(time.Second) / sr
+	accel, period := 2.5, 0.3
+
+	fmt.Println("@@@ rmse is", CalcWaveRMSE(
+		oscillateTimeOpt1(accel, period),
+		OscillateTime(accel, period),
+		48_000,
+	))
+
+	oscWithTime := func(peakAccel, period float64) TimeFn {
+		return func(t float64) float64 {
+			return (1+peakAccel/2)*t - peakAccel/(4*math.Pi*period)*math.Sin(2*math.Pi*period*t)
+		}
+	}
+
+	wave1 := func(freq float64) WaveFn {
+		return AmplifyWave(
+			FixedAmplify(0.5),
+			IntegrateWave(
+				oscWithTime(2.0, 0.2),
+				IntegrateWave(
+					MultiplyTime(freq),
+					BasicSinFn,
+				),
+			),
+		)
+	}
+
+	wave2 := func(freq float64) WaveFn {
+		return AmplifyWave(
+			FixedAmplify(0.5),
+			IntegrateWave(
+				OscillateTime(2.0, 0.2),
+				IntegrateWave(
+					MultiplyTime(freq),
+					BasicSinFn,
+				),
+			),
+		)
+	}
+
+	// alright; so the caching doesn't scale with frequency. Is that a fault of
+	// the equations; or a relic of the
+
+	fmt.Println("@@@ rmse @440hz is", CalcWaveRMSE(
+		wave1(440),
+		wave2(440),
+		48_000,
+	))
+
+	fmt.Println("@@@ rmse @1hz is", CalcWaveRMSE(
+		wave1(1),
+		wave2(1),
+		48_000,
+	))
+
+	b.Skip()
+
+	// This tests the speed of directly calculating the oscillation each time vs
+	// using a cached lookup of time.
+	//
+	// Conclusion: cached is, unsurprisingly, much faster - 8ns vs uncached ns.
+	b.Run("cacheVsManual", func(b *testing.B) {
+		b.Run("uncached", func(b *testing.B) {
+			fn := oscillateTimeOpt1(accel, period)
+			for i := 0; i < b.N; i++ {
+				t := float64(i) * stepFloat
+				_cacheBenchFloat = fn(t)
+			}
+		})
+
+		b.Run("cached", func(b *testing.B) {
+			fn := oscillateTimeOpt2(accel, period)
+			for i := 0; i < b.N; i++ {
+				t := float64(i) * stepFloat
+				_cacheBenchFloat = fn(t)
+			}
+		})
+	})
+
+	// This hoists certain unchanging calculations up to be calculated once.
+	//
+	// Conclusion: hoisting the fixed multipliers cuts another 1ns off; down to
+	// 7.5ns.
+	b.Run("hoistedConsts", func(b *testing.B) {
+		b.Run("inlineCalc", func(b *testing.B) {
+			fn := oscillateTimeOpt2(accel, period)
+			for i := 0; i < b.N; i++ {
+				t := float64(i) * stepFloat
+				_cacheBenchFloat = fn(t)
+			}
+		})
+
+		b.Run("hoistedConsts", func(b *testing.B) {
+			fn := oscillateTimeOpt3(accel, period)
+			for i := 0; i < b.N; i++ {
+				t := float64(i) * stepFloat
+				_cacheBenchFloat = fn(t)
+			}
+		})
+	})
+}
+
+func oscillateTimeOpt1(peakAccel, period float64) TimeFn {
+	return func(t float64) float64 {
+		return (1+peakAccel/2)*t - peakAccel/(4*math.Pi*period)*math.Sin(2*math.Pi*period*t)
+	}
+}
+
+func oscillateTimeOpt2(peakAccel, period float64) TimeFn {
+	return func(t float64) float64 {
+		return (1+(peakAccel/2))*t - peakAccel/(4*math.Pi*period)*lookupSin(period*t)
+	}
+}
+
+func oscillateTimeOpt3(peakAccel, period float64) TimeFn {
+	c1 := 1 + (peakAccel / 2)
+	c2 := peakAccel / (4 * math.Pi * period)
+	return func(t float64) float64 {
+		return c1*t - c2*lookupSin(period*t)
+	}
 }

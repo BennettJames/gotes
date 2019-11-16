@@ -25,81 +25,95 @@ func main() {
 		dir     = flagSet.String("dir", "", "directory to output samples")
 	)
 	flagSet.Parse(os.Args[1:])
-	if err := genBasic(*dir); err != nil {
+	if err := genWavs(*dir); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func genBasic(dir string) error {
-	sinBuf := gotes.WriteWav(
-		gotes.SampleRange(
-			gotes.SinWave(gotes.NoteA3),
-			sampleRate,
-			defaultDur,
-		),
-		gotes.WavConfig{
-			SampleRate: sampleRate,
-			Channels:   channels,
-			BitDepth:   bitDepth,
+// genWavs writes out a set of wav samples of various waves to the specified
+// directory.
+func genWavs(dir string) error {
+	waveData := []struct {
+		fName string
+		wave  gotes.WaveFn
+		dur   time.Duration
+	}{
+		{
+			fName: "sin-a3.wav",
+			wave:  gotes.SinWave(gotes.NoteA3),
 		},
-	)
-	if err := writeBuf(sinBuf, dir, "sin-a3.wav"); err != nil {
-		return err
-	}
-
-	squareBuf := gotes.WriteWav(
-		gotes.SampleRange(
-			gotes.AmplifyWave(
+		{
+			fName: "square-a3.wav",
+			wave: gotes.AmplifyWave(
 				gotes.FixedAmplify(0.3),
 				gotes.SquareWave(gotes.NoteA3),
 			),
-			sampleRate,
-			defaultDur,
-		),
-		gotes.WavConfig{
-			SampleRate: sampleRate,
-			Channels:   channels,
-			BitDepth:   bitDepth,
 		},
-	)
-	if err := writeBuf(squareBuf, dir, "square-a3.wav"); err != nil {
-		return err
-	}
-
-	triBuf := gotes.WriteWav(
-		gotes.SampleRange(
-			gotes.TriangleWave(gotes.NoteA3),
-			sampleRate,
-			defaultDur,
-		),
-		gotes.WavConfig{
-			SampleRate: sampleRate,
-			Channels:   channels,
-			BitDepth:   bitDepth,
+		{
+			fName: "tri-a3.wav",
+			wave:  gotes.TriangleWave(gotes.NoteA3),
 		},
-	)
-	if err := writeBuf(triBuf, dir, "tri-a3.wav"); err != nil {
-		return err
-	}
-
-	sawBuf := gotes.WriteWav(
-		gotes.SampleRange(
-			gotes.AmplifyWave(
+		{
+			fName: "saw-a3.wav",
+			wave: gotes.AmplifyWave(
 				gotes.FixedAmplify(0.4),
 				gotes.SawWave(gotes.NoteA3),
 			),
-			sampleRate,
-			defaultDur,
-		),
-		gotes.WavConfig{
-			SampleRate: sampleRate,
-			Channels:   channels,
-			BitDepth:   bitDepth,
 		},
-	)
-	if err := writeBuf(sawBuf, dir, "saw-a3.wav"); err != nil {
-		return err
+		{
+			fName: "good-osc-1.wav",
+			wave: gotes.AmplifyWave(
+				gotes.Gain(0.5),
+				gotes.IntegrateWave(
+					gotes.OscillateTime(2.0, 0.2),
+					gotes.SinWave(gotes.NoteA3),
+				),
+			),
+			dur: 10 * time.Second,
+		},
+		{
+			fName: "bad-osc-1.wav",
+			wave: gotes.AmplifyWave(
+				gotes.Gain(0.5),
+				gotes.IntegrateWave(
+					gotes.BadOscillateTime(2.0, 0.2),
+					gotes.SinWave(gotes.NoteA3),
+				),
+			),
+			dur: 10 * time.Second,
+		},
+		{
+			fName: "bad-osc-2.wav",
+			wave: gotes.AmplifyWave(
+				gotes.Gain(0.5),
+				gotes.IntegrateWave(
+					gotes.BadOscillateTime2(1.0, 0.2),
+					gotes.SinWave(gotes.NoteA3),
+				),
+			),
+			dur: 10 * time.Second,
+		},
 	}
+
+	for _, w := range waveData {
+		dur := w.dur
+		if dur == 0 {
+			dur = defaultDur
+		}
+		streamer := gotes.StreamerFromWave(w.wave, sampleRate)
+		buf := gotes.WriteWav(
+			gotes.SampleStreamer(streamer, sampleRate, dur),
+			gotes.WavConfig{
+				SampleRate: sampleRate,
+				Channels:   channels,
+				BitDepth:   bitDepth,
+			},
+		)
+		if err := writeBuf(buf, dir, w.fName); err != nil {
+			return fmt.Errorf("Error writing '%s': %w", w.fName, err)
+		}
+	}
+
 	return nil
 }
 

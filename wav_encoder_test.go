@@ -18,7 +18,7 @@ func Test_WriteWav(t *testing.T) {
 	dur := 2000 * time.Millisecond
 	wave := PianoNote(dur, NoteA3)
 
-	samples := SampleRange(wave, sampleRate, dur)
+	samples := SampleWave(wave, sampleRate, dur)
 	expectedLen := sampleRate * int(float64(dur)/float64(time.Second)) * 2
 	if len(samples) != expectedLen {
 		t.Fatalf("Expected %d samples, got %d", expectedLen, len(samples))

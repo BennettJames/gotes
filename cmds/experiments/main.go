@@ -19,7 +19,7 @@ func main() {
 	sr := gotes.SampleRate(48000)
 	var wave gotes.WaveFn
 	var _ = wave
-	var streamer gotes.BiStreamer
+	var streamer gotes.Streamer
 	var _ = streamer
 
 	wave = gotes.LinearFadeLooper(
@@ -187,103 +187,41 @@ func main() {
 		},
 	)
 
-	kb := gotes.NewKeyboard(sr, 2000*time.Millisecond)
-	go func() {
-		twinkleNotes := []float64{
-			gotes.NoteC4, gotes.NoteC4, gotes.NoteG4, gotes.NoteG4,
-			gotes.NoteA4, gotes.NoteA4, gotes.NoteG4, 0,
+	// ques (bs): could I reuse oscillatetime, or a variant thereof, to vary
+	// waveforms? Hrm; maybe. I'd emphasize "variant thereof"; I think the core
+	// API would not work.
+	//
+	// Rough idea: there are two waveforms. In a period; they should vary the
+	// extent to which one is favored over the other in blending.
+	//
+	// It's worth also more explicitly defining what a "mixer" is. A Mixer here is
+	// something that fully moves from one value to another in a time range. This
+	// is a case where normalizing to [0, 1] works quite well: 0 is all one value;
+	// 1 is all the second; and anything in-between is blended.
+	//
+	// While it'd be fine to use a wrapper of some sort; I'd like it if I could avoid
 
-			gotes.NoteF4, gotes.NoteF4, gotes.NoteE4, gotes.NoteE4,
-			gotes.NoteD4, gotes.NoteD4, gotes.NoteC4, 0,
+	// sidenote, but I think I need to cultivate a clearer set of time modifier
+	// and offset functions. I think I'll wait on that a bit - that starts getting
+	// into questions about whether I ought to continue with different function
+	// types, or whether I should unify behind just a single wave function. I'm
+	// leaning towards the latter - while it's definitely true that different
+	// float->float functions have different semantics and behavior; I'm not sure
+	// how well that can be preserved explicitly.
 
-			gotes.NoteG4, gotes.NoteG4, gotes.NoteF4, gotes.NoteF4,
-			gotes.NoteE4, gotes.NoteE4, gotes.NoteD4, 0,
+	wave = gotes.AmplifyWave(
+		gotes.Gain(0.25),
+		gotes.IntegrateWave(
+			gotes.OscillateTime(1.0, 0.2),
+			// gotes.BadOscillateTime(2.0, 0.2),
+			// gotes.BadOscillateTime2(1.0, 0.2),
+			gotes.SinWave(gotes.NoteA3),
+		),
+	)
 
-			gotes.NoteG4, gotes.NoteG4, gotes.NoteF4, gotes.NoteF4,
-			gotes.NoteE4, gotes.NoteE4, gotes.NoteD4, 0,
-
-			gotes.NoteC4, gotes.NoteC4, gotes.NoteG4, gotes.NoteG4,
-			gotes.NoteA4, gotes.NoteA4, gotes.NoteG4, 0,
-
-			gotes.NoteF4, gotes.NoteF4, gotes.NoteE4, gotes.NoteE4,
-			gotes.NoteD4, gotes.NoteD4, gotes.NoteC4, 0,
-		}
-
-		for {
-			for _, n := range twinkleNotes {
-				time.Sleep(400 * time.Millisecond)
-				kb.Add(n)
-			}
-			time.Sleep(1000 * time.Millisecond)
-		}
-	}()
-	streamer = kb
+	streamer = gotes.StreamerFromWave(wave, sr)
 
 	speaker := gotes.NewSpeaker(sr, streamer, sr.N(200*time.Millisecond))
 	log.Fatal(speaker.Run(ctx))
-}
 
-// analyzeStream logs some simplistic stream information once per second.
-// Occasionally useful/interesting when debugging.
-func analyzeStream(
-	sr gotes.SampleRate,
-	srcStream gotes.PerfectStream,
-) gotes.PerfectStream {
-	startTime := time.Now()
-	lastLog := startTime
-	totalSamples := 0
-	totalCalls := 0
-
-	return func(samples [][2]float64) {
-
-		totalSamples += len(samples)
-		totalCalls++
-		now := time.Now()
-		if now.Sub(lastLog) >= time.Second {
-			lastLog = now
-			fmt.Println("max/min/average", getInfo(samples))
-		}
-	}
-}
-
-type sampleInfo struct {
-	min     float64
-	max     float64
-	average float64
-}
-
-func getInfo(samples [][2]float64) sampleInfo {
-	// some notes on sampling rate:
-	//
-	// - average chunk size seems to be 512, but can vary. Not sure who
-	//   determines that; might just be a set value somewhere.
-	//
-	// - values are in range of [-1, 1]. Average of that per sample is
-	//   zero, but can vary a bit.
-
-	info := sampleInfo{
-		min: math.MaxFloat64,
-		max: -math.MaxFloat64,
-	}
-	for i := 0; i < len(samples); i++ {
-		s0, s1 := samples[i][0], samples[i][1]
-		info.min = math.Min(s0, info.min)
-		info.min = math.Min(s1, info.min)
-		info.max = math.Max(s0, info.max)
-		info.max = math.Max(s1, info.max)
-
-		info.average += (math.Abs(s0) + math.Abs(s1)) / 2
-	}
-	info.average /= float64(len(samples))
-	return info
-}
-
-func combineWave(fns ...gotes.WaveFn) gotes.WaveFn {
-	return func(t float64) float64 {
-		var v float64
-		for _, f := range fns {
-			v += f(t)
-		}
-		return v
-	}
 }

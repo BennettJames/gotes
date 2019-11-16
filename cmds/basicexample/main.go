@@ -22,7 +22,7 @@ func main() {
 		gotes.PianoNote(noteDuration, gotes.NoteG4),
 		gotes.PianoNote(noteDuration, gotes.NoteF4),
 	)
-	streamer := gotes.StreamerFromWave(sampleRate, wave)
+	streamer := gotes.StreamerFromWave(wave, sampleRate)
 	speaker := gotes.NewSpeaker(sampleRate, streamer, sampleRate.N(speakerCache))
 
 	log.Fatal(speaker.Run(context.Background()))

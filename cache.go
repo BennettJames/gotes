@@ -19,7 +19,7 @@ func Cache(fn WaveFn) WaveFn {
 	return InterpolateCache(fn, DefaultCacheSize)
 }
 
-// DirectCacheFn creates a function that will cache via direct lookups. For each
+// DirectCache creates a function that will cache via direct lookups. For each
 // value in the returned wave function, it finds the closest value and returns
 // it.
 func DirectCache(fn WaveFn, size int) WaveFn {
@@ -32,7 +32,7 @@ func DirectCache(fn WaveFn, size int) WaveFn {
 	}
 }
 
-// InterpolateCacheFn creates a function that will perform interpolated cache
+// InterpolateCache creates a function that will perform interpolated cache
 // lookups. For each value passed to the returned wave function, it finds the
 // to closest values and averages between them.
 func InterpolateCache(fn WaveFn, size int) WaveFn {
@@ -40,15 +40,17 @@ func InterpolateCache(fn WaveFn, size int) WaveFn {
 	return func(t float64) float64 {
 		size := len(cache) - 1
 		t = normT(t)
-		i := int(t * float64(size))
-		return cache[i]*(1-t) + cache[i+1]*(t)
+		floatI := t * float64(size)
+		i := int(floatI)
+		amt := floatI - float64(i)
+		return cache[i]*(1-amt) + cache[i+1]*(amt)
 	}
 }
 
 // MakeCache creates a cached set of values of the given size. The final
 // value will always wrap around to the first, which makes for easier lookups
 // in certain situations.
-func MakeCache(fn WaveFn, size int) []float64 {
+func MakeCache(fn func(float64) float64, size int) []float64 {
 	cache := make([]float64, size)
 	size-- // the last index is reserved for easy wraparound calculations
 	for i := 0; i < size; i++ {
@@ -64,8 +66,10 @@ func MakeCache(fn WaveFn, size int) []float64 {
 func CacheInterpolateLookup(cache []float64, t float64) float64 {
 	size := len(cache) - 1
 	t = normT(t)
-	i := int(t * float64(size))
-	return cache[i]*(1-t) + cache[i+1]*(t)
+	floatI := t * float64(size)
+	i := int(floatI)
+	amt := floatI - float64(i)
+	return cache[i]*(1-amt) + cache[i+1]*(amt)
 }
 
 // CacheDirectLookup performs cache lookups by finding the two closest values
@@ -81,7 +85,7 @@ func CacheDirectLookup(cache []float64, t float64) float64 {
 // two errors when at the given sample rate. That can be useful when tuning cache
 // size.
 func CalcWaveRMSE(
-	actualFn, approxFn WaveFn,
+	actualFn, approxFn func(float64) float64,
 	numSamples int,
 ) float64 {
 	errSum := 0.0

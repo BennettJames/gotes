@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	defaultWavChannels = 1
+	defaultWavBitDepth = 16
+)
+
 type (
 	// WavConfig specifies properties that
 	WavConfig struct {
@@ -16,9 +21,33 @@ type (
 	}
 )
 
-// SampleRange will generate a range of samples from the wave and return a
+// SampleStreamer will generate a range of samples from the streamer and return
+// a uint16-encoded byte array with the samples, up to the given duration.
+func SampleStreamer(
+	stream Streamer,
+	rate SampleRate,
+	dur time.Duration,
+) []byte {
+	sampleSize := (float64(dur) / float64(time.Second)) * float64(rate)
+	floatSamples := make([]float64, int(sampleSize))
+	stream.Stream(floatSamples)
+
+	byteSamples := []byte{}
+	for _, sample := range floatSamples {
+		sample = math.Min(1, math.Max(-1, sample))
+		packedSample := int16(sample * (1<<15 - 1))
+		byteSamples = append(byteSamples, byte(packedSample), byte(packedSample>>8))
+	}
+	return byteSamples
+}
+
+// SampleWave will generate a range of samples from the wave and return a
 // uint16-encoded byte array with the samples, up to the given duration.
-func SampleRange(fn WaveFn, rate int, dur time.Duration) []byte {
+func SampleWave(
+	fn WaveFn,
+	rate int,
+	dur time.Duration,
+) []byte {
 	samples := []byte{}
 	sampleSize := (float64(dur) / float64(time.Second)) * float64(rate)
 	for i := 0; i < int(sampleSize); i++ {
@@ -78,4 +107,19 @@ func flattenByteBuffers(buffers ...[]byte) []byte {
 		}
 	}
 	return all
+}
+
+func getWavDefaults(config WavConfig) WavConfig {
+	return WavConfig{
+		SampleRate: config.SampleRate,
+		Channels:   getDefaultUint32(config.Channels, defaultWavChannels),
+		BitDepth:   getDefaultUint32(config.BitDepth, defaultWavBitDepth),
+	}
+}
+
+func getDefaultUint32(val, defaultVal uint32) uint32 {
+	if val == 0 {
+		return defaultVal
+	}
+	return val
 }

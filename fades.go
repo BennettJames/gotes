@@ -76,6 +76,7 @@ func genericFadeLooper(
 		if nextI == 0 && t < durT {
 			lastFn = ZeroWave()
 		}
+		// fixme (bs): math.mod is very inefficient
 		return mix(math.Mod(t, durT)/fadeT, lastFn(t), nextFn(t))
 	}
 }

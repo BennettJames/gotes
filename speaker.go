@@ -6,27 +6,17 @@ import (
 	"github.com/hajimehoshi/oto"
 )
 
-type (
-	Streamer interface {
-		Stream(samples []float64)
-	}
-
-	BiStreamer interface {
-		Stream(samples [][2]float64)
-	}
-)
-
 type Speaker struct {
 	// todo (bs): see if you can get rid of sample rate as a foreign dependency.
 	// Even if I just copy/paste it that's fine.
 	sr      SampleRate
-	stream  BiStreamer
+	stream  Streamer
 	bufSize int
 }
 
 func NewSpeaker(
 	sr SampleRate,
-	stream BiStreamer,
+	stream Streamer,
 	bufSize int,
 ) *Speaker {
 	return &Speaker{
@@ -46,7 +36,7 @@ func (s *Speaker) Run(ctx context.Context) error {
 	defer player.Close()
 
 	sampleSize := 512
-	samples := make([][2]float64, sampleSize)
+	samples := make([]float64, sampleSize)
 	buf := make([]byte, sampleSize*4)
 
 	update := func() error {
@@ -54,8 +44,7 @@ func (s *Speaker) Run(ctx context.Context) error {
 		s.stream.Stream(samples)
 
 		for i := range samples {
-			for c := range samples[i] {
-				val := samples[i][c]
+			for c, val := range []float64{samples[i], samples[i]} {
 				if val < -1 {
 					val = -1
 				}

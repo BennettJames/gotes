@@ -7,47 +7,44 @@ test:
 	go test ./...
 
 #
-# Generates a binary that when called will generate a set of .wav samples.
-#
-# Marked as phony as go has a fairly smart self-managed cache for building
-# binaries.
+# Targets to build and run gensamples, which will create a series of wav sample
+# files and output them to doc/.
 #
 .PHONY: bin/gensamples
 bin/gensamples:
 	go build -o bin/gensamples ./cmds/gensamples
-
-#
-# Builds experiments, a random set of extended audio experiments.
-#
-.PHONY: bin/experiments
-bin/experiments:
-	go build -o bin/experiments ./cmds/experiments
-
-#
-# Generates a set of samples that are used in the readme. Output is written to
-# "doc", where they can be included in documentation.
-#
 .PHONY: run-gensamples
 run-gensamples: bin/gensamples
 	bin/gensamples -dir doc
 
 #
-# Executes the experiments.
+# Targets to build and run experiments, a hodgepode set of one-off examples that
+# are useful when developing waves.
 #
+.PHONY: bin/experiments
+bin/experiments:
+	go build -o bin/experiments ./cmds/experiments
 .PHONY: run-experiments
 run-experiments: bin/experiments
 	bin/experiments
 
 #
-# Builds experiments, a random set of extended audio experiments.
+# Targets to build and run basicexample, which will play a very simple note
+# progression on repeat.
 #
 .PHONY: bin/basicexample
 bin/basicexample:
-       go build -o bin/basicexample ./cmds/basicexample
+	go build -o bin/basicexample ./cmds/basicexample
+.PHONY: run-basicexample
+run-basicexample: bin/basicexample
+	bin/basicexample
 
 #
-# Executes the basicexample.
+# Targets to build and run the "twinkle" command; which will play
+# twinkle-twinkle little star on repeat via the piano synthesizer.
 #
-.PHONY:run-basicexample
-run-basicexample: bin/basicexample
-       bin/basicexample
+.PHONY: bin/twinkle run-twinkle
+bin/twinkle:
+	go build -o bin/twinkle ./cmds/twinkle
+run-twinkle: bin/twinkle
+	bin/twinkle
