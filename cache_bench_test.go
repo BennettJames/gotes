@@ -10,30 +10,6 @@ import (
 var _cacheBenchInt = int64(0)
 var _cacheBenchFloat = float64(0)
 
-func Benchmark_waveFns(b *testing.B) {
-	const sr = float64(48_000)
-	const stepFloat = float64(time.Second) / sr
-
-	b.Run("attackAndDecay", func(b *testing.B) {
-		fn := AttackAndDecay(2.0, 6.0)
-		for i := 0; i < b.N; i++ {
-			t := float64(i) * stepFloat
-			t = t - float64(int(t))
-			_cacheBenchFloat = fn(t)
-		}
-	})
-
-	b.Run("pseudoCacheAttackAndDecay", func(b *testing.B) {
-		fn := AttackAndDecay(2.0, 6.0)
-		fn = AmpFn(InterpolateCache(WaveFn(fn), 1024))
-		for i := 0; i < b.N; i++ {
-			t := float64(i) * stepFloat
-			t = t - float64(int(t))
-			_cacheBenchFloat = fn(t)
-		}
-	})
-}
-
 func Benchmark_cacheLookups(b *testing.B) {
 	const freq = NoteA3
 	const cacheSize = 512
@@ -330,7 +306,7 @@ func interCacheLookupOpt3(
 	return cache[i]*(1-amt) + cache[i+1]*(amt)
 }
 
-// interCacheLookupOpt4 perfoms it's own size calculation and determines values
+// interCacheLookupOpt4 performs it's own size calculation and determines values
 // using integer modulo operations.
 func interCacheLookupOpt4(
 	cache []float64,

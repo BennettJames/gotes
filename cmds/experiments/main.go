@@ -187,34 +187,26 @@ func main() {
 		},
 	)
 
-	// ques (bs): could I reuse oscillatetime, or a variant thereof, to vary
-	// waveforms? Hrm; maybe. I'd emphasize "variant thereof"; I think the core
-	// API would not work.
-	//
-	// Rough idea: there are two waveforms. In a period; they should vary the
-	// extent to which one is favored over the other in blending.
-	//
-	// It's worth also more explicitly defining what a "mixer" is. A Mixer here is
-	// something that fully moves from one value to another in a time range. This
-	// is a case where normalizing to [0, 1] works quite well: 0 is all one value;
-	// 1 is all the second; and anything in-between is blended.
-	//
-	// While it'd be fine to use a wrapper of some sort; I'd like it if I could avoid
+	wave = gotes.AmplifyWave(
+		gotes.Gain(0.25),
+		gotes.IntegrateWave(
+			gotes.BadOscillateTime(2.0, 0.2),
+			gotes.SinWave(gotes.NoteA3),
+		),
+	)
 
-	// sidenote, but I think I need to cultivate a clearer set of time modifier
-	// and offset functions. I think I'll wait on that a bit - that starts getting
-	// into questions about whether I ought to continue with different function
-	// types, or whether I should unify behind just a single wave function. I'm
-	// leaning towards the latter - while it's definitely true that different
-	// float->float functions have different semantics and behavior; I'm not sure
-	// how well that can be preserved explicitly.
+	wave = gotes.AmplifyWave(
+		gotes.Gain(0.25),
+		gotes.IntegrateWave(
+			gotes.BadOscillateTime2(1.0, 0.2),
+			gotes.SinWave(gotes.NoteA3),
+		),
+	)
 
 	wave = gotes.AmplifyWave(
 		gotes.Gain(0.25),
 		gotes.IntegrateWave(
 			gotes.OscillateTime(1.0, 0.2),
-			// gotes.BadOscillateTime(2.0, 0.2),
-			// gotes.BadOscillateTime2(1.0, 0.2),
 			gotes.SinWave(gotes.NoteA3),
 		),
 	)

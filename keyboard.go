@@ -70,13 +70,8 @@ func (g *Keyboard) Add(freq float64) {
 
 	w := AmplifyWave(
 		Gain(0.4),
-		AmplifyWave(
-			AttackAndDecay(2.0, 6.0),
-			IntegrateWave(
-				MultiplyTime(freq),
-				cachePiano,
-			),
-		))
+		PianoNote(g.dur, freq),
+	)
 
 	g.waves = append(g.waves, func(t float64) (float64, bool) {
 		if t > baseT+durT {
@@ -84,18 +79,4 @@ func (g *Keyboard) Add(freq float64) {
 		}
 		return w(t - baseT), false
 	})
-}
-
-var cachePiano = cacheWave(BasicPianoFn)
-
-func cacheWave(fn WaveFn) WaveFn {
-	cacheSize := 2048 // note (bs): may wish to make this configurable
-	cache := make([]float64, cacheSize)
-	for i := 0; i < cacheSize; i++ {
-		t := float64(i) / float64(cacheSize)
-		cache[i] = fn(t)
-	}
-	return func(t float64) float64 {
-		return cache[int(t*float64(cacheSize))%cacheSize]
-	}
 }

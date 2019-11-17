@@ -89,7 +89,7 @@ func CalcWaveRMSE(
 	numSamples int,
 ) float64 {
 	errSum := 0.0
-	for i := 0; i < numSamples; i++ {
+	for i := 0; i < numSamples*2; i++ {
 		t := float64(i) / float64(numSamples)
 		errSum += math.Pow(actualFn(t)-approxFn(t), 2)
 	}

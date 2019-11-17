@@ -20,22 +20,22 @@ func MultiplyTime(mult float64) TimeFn {
 
 // SinWave produces a sine wave function at the given frequency.
 func SinWave(freq float64) WaveFn {
-	return IntegrateWave(MultiplyTime(freq), BasicSinFn)
+	return IntegrateWave(MultiplyTime(freq), lookupSin)
 }
 
 // SquareWave produces a square wave function at the given frequency.
 func SquareWave(freq float64) WaveFn {
-	return IntegrateWave(MultiplyTime(freq), BasicSquareFn)
+	return IntegrateWave(MultiplyTime(freq), lookupSquare)
 }
 
 // TriangleWave produces a triangle wave function at the given frequency.
 func TriangleWave(freq float64) WaveFn {
-	return IntegrateWave(MultiplyTime(freq), BasicTriangleFn)
+	return IntegrateWave(MultiplyTime(freq), lookupTriangle)
 }
 
 // SawWave produces a sawtooth wave function at the given frequency.
 func SawWave(freq float64) WaveFn {
-	return IntegrateWave(MultiplyTime(freq), BasicSawFn)
+	return IntegrateWave(MultiplyTime(freq), lookupSaw)
 }
 
 // ZeroWave is a wave that is always zero (produces no sound).

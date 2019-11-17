@@ -6,7 +6,7 @@ import (
 )
 
 // PianoNote creates a piano-like note at the given frequency over the time
-// period.
+// period, while using some caching for efficiency.
 func PianoNote(dur time.Duration, freq float64) WaveFn {
 	durT := float64(dur) / float64(time.Second)
 	dampen := math.Pow(0.5*math.Log(freq*0.3), 2)
@@ -36,16 +36,17 @@ func BasicPianoFn(t float64) float64 {
 	return fn(math.Pow(fn(0), 2) + 0.75*fn(0.25) + 0.1*fn(0.5))
 }
 
-// AttackAndDecay is an amplitude function that has an initial rapid gain phase
-// (the "attack"), and a fadeout over the course of durT. dampen controls the
-// rate of the fadeout, with higher values increasing the severity of it.
-func AttackAndDecay(
+// uncachedAttackAndDecay is an amplitude function that has an initial rapid
+// gain phase (the "attack"), and a fadeout over the course of durT. dampen
+// controls the rate of the fadeout, with higher values increasing the severity
+// of it.
+//
+// This is an uncached variety that is preserved mostly for posterity and
+// benchmarking.
+func uncachedAttackAndDecay(
 	durT float64,
 	dampen float64,
 ) AmpFn {
-	// todo (bs): let's see about changing this into a finite wave. Also - I
-	// suspect I want to create some helpers for that; as to make it easy to
-	// coerce finite and non-finite waves together.
 	attackT := 0.002
 	durT = math.Max(attackT*2, durT)
 	return func(t float64) float64 {
@@ -60,13 +61,55 @@ func AttackAndDecay(
 	}
 }
 
+// AttackAndDecay is an amplitude function that has an initial rapid
+// gain phase (the "attack"), and a fadeout over the course of durT. dampen
+// controls the rate of the fadeout, with higher values increasing the severity
+// of it.
+func AttackAndDecay(
+	durT float64,
+	dampen float64,
+) AmpFn {
+	attackT := 0.002
+	durT = math.Max(attackT*2, durT)
+	cache := MakeCache(
+		func(t float64) float64 {
+			return math.Pow(1-t, dampen)
+		},
+		16,
+	)
+	cache[len(cache)-1] = 0 // clumsy
+	invAttack := 1 / attackT
+	invDur := 1 / (durT - attackT)
+	return func(t float64) float64 {
+		if t < 0 {
+			return 0
+		} else if t < attackT {
+			return t * invAttack
+		} else if t < durT {
+			return CacheInterpolateLookup(cache, (t-attackT)*invDur)
+		}
+		return 0
+	}
+}
+
+func decayFn(
+	durT float64,
+	dampen float64,
+) WaveFn {
+	attackT := 0.002
+	durT = math.Max(attackT*2, durT)
+	return func(t float64) float64 {
+		return math.Pow(1-(t-attackT)/(durT-attackT), dampen)
+	}
+}
+
 // WeirdPianoWave produces a sound akin to piano note, but with a different
 // waveform.
 func WeirdPianoWave(dur time.Duration, freq float64) WaveFn {
 	durT := float64(dur) / float64(time.Second)
 	dampen := math.Pow(0.5*math.Log(freq*0.3), 2)
 	return AmplifyWave(
-		AttackAndDecay(durT, dampen),
+		uncachedAttackAndDecay(durT, dampen),
 		IntegrateWave(
 			MultiplyTime(freq),
 			WeirdWave1,

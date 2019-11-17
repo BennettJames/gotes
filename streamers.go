@@ -1,12 +1,15 @@
 package gotes
 
 type (
-	// Streamer
+	// Streamer is an interface that bridges the gap between playback and
+	// underlying wave functions. A streamer implementation takes a float array,
+	// and writes samples to it. The streamer is responsible for keeping track of
+	// sample rates and time.
 	Streamer interface {
 		Stream(samples []float64)
 	}
 
-	// BiStreamer
+	// BiStreamer is as Streamer, but for two channels.
 	BiStreamer interface {
 		Stream(samples [][2]float64)
 	}
