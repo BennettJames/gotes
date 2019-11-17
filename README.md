@@ -114,19 +114,79 @@ func SinWave(frequency float64) WaveFn {
 
 Note that this is still just returning a wave function. If we'd like, we could
 apply `IntegrateWave` all over again. For instance; here's a usage of `SinWave`
-that will oscillate the frequency between 220 and 440 -
+that will oscillate the frequency between 220 and 440 every five seconds -
 
 ```go
 IntegrateWave(
-  func(t float64) float64 {
-		return 1.5*t + math.Sin(t*2*math.Pi)/(4*math.Pi)
-  },
+  gotes.OscillateTime(1.0, 0.2),
   SinWave(220),
 )
 ```
 
-Anyway: that's the basics of gotes. There are many other waves and modifier
-functions; head over to the [docs](docs) to see them all.
+That's the basics of gotes waves. There are many other waves and
+modifier functions; head over to the [docs](docs) to see them all.
+
+
+## Mutability and Managing Output
+
+Waves themselves are immutable and inert. They describe a wave over time; but we
+still need to be processed, managed, and played.
+
+An intermediary interface, `Streamer`, is used to create sets of samples from
+waves that. Here's it's definition -
+
+```go
+type Streamer interface {
+	Stream(samples []float64)
+}
+```
+
+And here's a wave being converted to a streamer -
+
+```go
+sr := SampleRate(48_000)
+streamer := StreamerFromWave(SinWave(NoteA3), sr)
+```
+
+This creates a streamer that will take 48,000 samples from the provided sin wave
+per second. The streamer will be called repeatedly with a float array; and the
+streamer is responsible for fully populating it with values. If say a sample
+array of size 1,000 is being used, the streamer will be called 48 times every
+second, and each time it will fill the array with the next 1,000 samples.
+
+Streamer implementations at a minimum need to be aware of sample rate and the
+passage of time. They can be extended to handle other time-sensitive and mutable
+state. For example, the `Keyboard` class is a streamer that handles realtime
+playback of piano notes. Notes can be dynamically triggered on keyboard, which
+will then manage the playback and eventual fadeout/removal of the note.
+
+Streamers can be used to output the sound in two ways: as .wav files, or as
+direct playback on speakers. Here's an example of a second-long sample being
+written to file -
+
+```go
+sampleLen := 1 * time.Second
+buf := WriteWav(
+	SampleStreamer(streamer, sr, 1*time.Second),
+	WavConfig{
+		SampleRate: sr,
+	},
+)
+if err := ioutil.WriteFile("out.wav", buf, 0644); err != nil {
+	return fmt.Errorf("Error writing 'out.wav': %w", err)
+}
+```
+
+Here's the speaker being set up for playback -
+
+```go
+speakerBuffer := 100 * time.Millisecond
+speaker := gotes.NewSpeaker(sr, streamer, sr.N(speakerBuffer))
+log.Fatal(speaker.Run(context.Background()))
+```
+
+They have the same basic pattern: a sample rate is set; a streamer is set up;
+and the playback system is initialized with both.
 
 
 [oto]:https://github.com/hajimehoshi/oto
