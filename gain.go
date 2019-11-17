@@ -14,13 +14,9 @@ const (
 	gainTransitionT = 0.2
 )
 
-// func Gain(amt float64, fn WaveFn) WaveFn {
-// 	g := math.Pow(2, math.Max(0, amt)) - 1
-// 	return func(t float64) float64 {
-// 		return fn(t) * g
-// 	}
-// }
-
+// Gain creates a constant amplier function by the given amount; but adjusted
+// expontentially. This results in a more "natural" wave adjustment than a static
+// amount.
 func Gain(amt float64) AmpFn {
 	g := math.Pow(2, math.Max(0, amt)) - 1
 	return func(t float64) float64 {

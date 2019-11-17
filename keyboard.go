@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// Kyeboard is an object that can be used to dynamically play piano-style notes
+// on over time.
 type Keyboard struct {
 	sr  SampleRate
 	dur time.Duration
@@ -15,6 +17,8 @@ type Keyboard struct {
 	totalSamples int
 }
 
+// NewKeyboard initializes a new keyboard with the given sample rate and note
+// duration.
 func NewKeyboard(sr SampleRate, dur time.Duration) *Keyboard {
 	return &Keyboard{
 		sr:  sr,
@@ -22,6 +26,7 @@ func NewKeyboard(sr SampleRate, dur time.Duration) *Keyboard {
 	}
 }
 
+// Stream implements the Streamer interface by providing the next set of samples.
 func (g *Keyboard) Stream(samples []float64) {
 	g.l.Lock()
 	defer g.l.Unlock()
@@ -48,6 +53,7 @@ func (g *Keyboard) Stream(samples []float64) {
 	g.waves = newWaves
 }
 
+// Add will create a note of the given frequency and add it to the keyboard.
 func (g *Keyboard) Add(freq float64) {
 	g.l.Lock()
 	defer g.l.Unlock()

@@ -4,7 +4,11 @@ import (
 	"math"
 )
 
-// FixedAmplify applies a constant
+// FixedAmplify creates a fixed amplifier function that will multiply a wave fn
+// by a constant.
+//
+// Note that this is a direct constant; more often than not `Gain` should
+// be used; which adjusts for decibels.
 func FixedAmplify(amp float64) AmpFn {
 	return func(t float64) float64 {
 		return amp
@@ -45,10 +49,12 @@ func ZeroWave() WaveFn {
 	}
 }
 
+// BasicSinFn is a simple WaveFn that produces a 1hz sin wave.
 func BasicSinFn(t float64) float64 {
 	return math.Sin(2 * math.Pi * t)
 }
 
+// BasicSquareFn is a simple WaveFn that produces a 1hz square wave.
 func BasicSquareFn(t float64) float64 {
 	if BasicSinFn(t) > 0 {
 		return 1
@@ -56,10 +62,12 @@ func BasicSquareFn(t float64) float64 {
 	return -1
 }
 
+// BasicTriangleFn is a simple WaveFn that produces a 1hz triangle wave.
 func BasicTriangleFn(t float64) float64 {
 	return math.Abs(4*(t-math.Floor(t)-0.5)) - 1
 }
 
+// BasicSawFn is a simple WaveFn that produces a 1hz saw wave.
 func BasicSawFn(t float64) float64 {
 	return 2 * (t - math.Floor(t) - 0.5)
 }

@@ -6,14 +6,16 @@ import (
 	"github.com/hajimehoshi/oto"
 )
 
+// Speaker is used to play back a streamer over physical speakers.
 type Speaker struct {
-	// todo (bs): see if you can get rid of sample rate as a foreign dependency.
-	// Even if I just copy/paste it that's fine.
 	sr      SampleRate
 	stream  Streamer
 	bufSize int
 }
 
+// NewSpeaker initializes a speaker around the given stream. The bufSize controls
+// how many samples are kept in a buffer, and the sample rate is how many
+// samples per second to take from the stream.
 func NewSpeaker(
 	sr SampleRate,
 	stream Streamer,
@@ -26,6 +28,8 @@ func NewSpeaker(
 	}
 }
 
+// Run will play back the underlying stream until it's cancelled or an error
+// occurs.
 func (s *Speaker) Run(ctx context.Context) error {
 
 	otoCtx, otoCtxErr := oto.NewContext(int(s.sr), 2, 2, s.bufSize)
@@ -44,6 +48,9 @@ func (s *Speaker) Run(ctx context.Context) error {
 		s.stream.Stream(samples)
 
 		for i := range samples {
+			// note (bs): this float array is a not-very-good way to make this
+			// a 2-channel sample. Ideally, there'd be better management of
+			// mono-vs-stereo via the injected interfaces.
 			for c, val := range []float64{samples[i], samples[i]} {
 				if val < -1 {
 					val = -1

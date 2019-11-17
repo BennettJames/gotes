@@ -43,6 +43,9 @@ func ExpFadeLooper(
 	return genericFadeLooper(dur, fade, ExpMix, fns...)
 }
 
+// SinFadeLooper will swap through the provided set of wave functions,
+// playing each one for "dur" amount of time and transitioning in time "fade".
+// It uses an sin transition function between waves.
 func SinFadeLooper(
 	dur, fade time.Duration,
 	fns ...WaveFn,
@@ -50,6 +53,9 @@ func SinFadeLooper(
 	return genericFadeLooper(dur, fade, SinMix, fns...)
 }
 
+// SigmoidFadeLooper will swap through the provided set of wave functions,
+// playing each one for "dur" amount of time and transitioning in time "fade".
+// It uses an sigmoid transition function between waves.
 func SigmoidFadeLooper(
 	dur, fade time.Duration,
 	fns ...WaveFn,
@@ -99,6 +105,8 @@ func ExpMix(t float64, v1, v2 float64) float64 {
 	return fadeOut*v1 + fadeIn*v2
 }
 
+// Sin blends v1 and v2 based on the time value. It's v1 for t<0, v2 for t>1,
+// and a sin transition in 0->1.
 func SinMix(t float64, v1, v2 float64) float64 {
 	t = math.Min(1, math.Max(0, t))
 	fadeOut := (math.Cos(t*math.Pi) + 1) / 2
@@ -106,6 +114,8 @@ func SinMix(t float64, v1, v2 float64) float64 {
 	return v1*fadeOut + v2*fadeIn
 }
 
+// SigmoidMix blends v1 and v2 based on the time value. It's v1 for t<0, v2 for t>1,
+// and a sigmoid transition in 0->1.
 func SigmoidMix(t float64, v1, v2 float64) float64 {
 	t = math.Min(1, math.Max(0, t))
 	fadeIn := 1 / (1 + math.Pow(math.E, 6-12*t))
