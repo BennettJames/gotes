@@ -211,9 +211,71 @@ func main() {
 		),
 	)
 
+	wave = gotes.AmplifyWave(
+		gotes.Gain(0.5),
+		linMixer(
+			func(t float64) float64 {
+				return math.Sin(t)/2 + 0.5
+			},
+			gotes.SinWave(gotes.NoteA3),
+			gotes.SinWave(gotes.NoteA4),
+		),
+	)
+
+	wave = gotes.AmplifyWave(
+		gotes.Gain(0.5),
+		sigMixer(
+			func(t float64) float64 {
+				return math.Sin(t)/2 + 0.5
+			},
+			gotes.SinWave(gotes.NoteA3),
+			gotes.SinWave(gotes.NoteA4),
+		),
+	)
+
 	streamer = gotes.StreamerFromWave(wave, sr)
 
 	speaker := gotes.NewSpeaker(sr, streamer, sr.N(200*time.Millisecond))
 	log.Fatal(speaker.Run(ctx))
 
+}
+
+func linMixer(
+	mixFn func(t float64) float64,
+	w1, w2 gotes.WaveFn,
+) gotes.WaveFn {
+
+	return func(t float64) float64 {
+		mixAmt := mixFn(t)
+		if mixAmt <= 0 {
+			return w1(t)
+		}
+		if mixAmt >= 1 {
+			return w2(t)
+		}
+		return w1(t)*(1-mixAmt) + w2(t)*(mixAmt)
+
+	}
+}
+
+func sigMixer(
+	mixFn func(t float64) float64,
+	w1, w2 gotes.WaveFn,
+) gotes.WaveFn {
+
+	return func(t float64) float64 {
+		mixAmt := mixFn(t)
+		if mixAmt <= 0 {
+			return w1(t)
+		}
+		if mixAmt >= 1 {
+			return w2(t)
+		}
+
+		c1 := math.Sqrt(1 - mixAmt)
+		c2 := math.Sqrt(mixAmt)
+
+		return w1(t)*c1 + w2(t)*c2
+
+	}
 }
