@@ -2,7 +2,7 @@
 
 _**Author's note** - unfortunately, github does not allow embedding of sound
 files in a readme. A few examples are linked that can be downloaded and played
-back. A few samples can be [found here](wavs)._
+back. A few samples can be [found here](wav-page)._
 
 [![GoDoc](https://godoc.org/github.com/BennettJames/gotes?status.svg)](https://godoc.org/github.com/BennettJames/gotes)
 
@@ -190,4 +190,4 @@ and the playback system is initialized with both.
 
 [oto]:https://github.com/hajimehoshi/oto
 [docs]:https://godoc.org/github.com/BennettJames/gotes
-[wavs]:https://bennettjames.github.io/gotes/index.html
+[wav-page]:https://bennettjames.github.io/gotes/index.html
