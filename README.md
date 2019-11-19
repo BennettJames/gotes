@@ -2,7 +2,7 @@
 
 _**Author's note** - unfortunately, github does not allow embedding of sound
 files in a readme. A few examples are linked that can be downloaded and played
-back. A few samples can be [found here](wav-page)._
+back. A few samples can be [found here][wav-page]._
 
 [![GoDoc](https://godoc.org/github.com/BennettJames/gotes?status.svg)](https://godoc.org/github.com/BennettJames/gotes)
 
@@ -47,7 +47,7 @@ func main() {
 
 ## Dependencies; Compatibility; Stability
 
-Gotes is based on [oto](oto), a cross-platform Go library that dynamically links
+Gotes is based on [oto][oto], a cross-platform Go library that dynamically links
 platform-specific audio libraries. There can be platform specific requirements
 for oto; I recommend viewing it's project page for help setting up any
 dependencies.
@@ -123,7 +123,7 @@ IntegrateWave(
 ```
 
 That's the basics of gotes waves. There are many other waves and
-modifier functions; head over to the [docs](docs) to see them all.
+modifier functions; head over to the [docs][docs] to see them all.
 
 
 ## Mutability and Managing Output
