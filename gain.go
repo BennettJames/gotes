@@ -60,8 +60,14 @@ func ScaleToLinear(startT, periodT float64) func(t float64) float64 {
 	}
 }
 
+// OffsetWave will play the wave function "starting" at the offset. That is:
+// before the offset; it will be zero; afterwards; it will return the wave
+// function offset by that amount.
 func OffsetWave(tOff float64, fn WaveFn) WaveFn {
 	return func(t float64) float64 {
+		if t < tOff {
+			return 0
+		}
 		return fn(t - tOff)
 	}
 }

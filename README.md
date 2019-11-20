@@ -44,6 +44,9 @@ func main() {
 }
 ```
 
+You can hear this [here][basic-example]. If you have the repo checked out, run
+`make run-basicexample` (or try a longer [example][twinkle]).
+
 
 ## Dependencies; Compatibility; Stability
 
@@ -75,9 +78,10 @@ speaker to convincingly play.
 
 ## Basics of Wave Composition in Gotes
 
-In gotes, the fundamental unit of sound is a _wave function_. This is a simple
-function that maps a time argument to a sample. Time proceeds from 0, and goes
-up by 1 for every second that passes. Samples are all in the range of -1 to 1.
+In gotes, the fundamental unit of sound is a [_wave function_][wave-fn]. This is
+a simple function that maps a time argument to a sample. Time proceeds from 0,
+and goes up by 1 for every second that passes. Samples are all in the range of
+-1 to 1.
 
 To start, let's define the simplest wave possible: a basic sine wave. It starts
 at zero; goes up to 1; down to -1; and back to zero once every second -
@@ -93,10 +97,11 @@ to increase the speed of the wave to actually hear it. In gotes, that's done by
 applying a _time function_. A wave function maps a time value to a sample value;
 a time function maps one time value to another.
 
-Gotes composes time functions and wave functions together using `IntegrateWave`.
-This takes two arguments - a time function and a wave function. It returns a new
-wave function, where the given time argument is first passed to the time
-function, then that value is given to the wave function.
+Gotes composes time functions and wave functions together using
+[`IntegrateWave`][integrate-wave]. This takes two arguments - a time function
+and a wave function. It returns a new wave function, where the given time
+argument is first passed to the time function, then that value is given to the
+wave function.
 
 If we want to say boost this wave up to a audible frequency, we can apply a
 constant multiplier to the time wave -
@@ -112,8 +117,9 @@ func SinWave(frequency float64) WaveFn {
 ```
 
 Note that this is still just returning a wave function. If we'd like, we could
-apply `IntegrateWave` all over again. For instance; here's a usage of `SinWave`
-that will oscillate the frequency between 220 and 440 every five seconds -
+apply `IntegrateWave` all over again. For instance; here's a usage of
+[`SinWave`][sin-wave] that will oscillate the frequency between 220 and 440
+every five seconds -
 
 ```go
 IntegrateWave(
@@ -131,8 +137,8 @@ modifier functions; head over to the [docs][docs] to see them all.
 Waves themselves are immutable and inert. They describe a wave over time; but we
 still need to be processed, managed, and played.
 
-An intermediary interface, `Streamer`, is used to create sets of samples from
-waves that. Here's it's definition -
+An intermediary interface, [`Streamer`][streamer], is used to create sets of
+samples from waves that. Here's it's definition -
 
 ```go
 type Streamer interface {
@@ -155,9 +161,10 @@ second, and each time it will fill the array with the next 1,000 samples.
 
 Streamer implementations at a minimum need to be aware of sample rate and the
 passage of time. They can be extended to handle other time-sensitive and mutable
-state. For example, the `Keyboard` class is a streamer that handles realtime
-playback of piano notes. Notes can be dynamically triggered on keyboard, which
-will then manage the playback and eventual fadeout/removal of the note.
+state. For example, the [`Keyboard`][keyboard] class is a streamer that handles
+realtime playback of piano notes. Notes can be dynamically triggered on
+keyboard, which will then manage the playback and eventual fadeout/removal of
+the note.
 
 Streamers can be used to output the sound in two ways: as .wav files, or as
 direct playback on speakers. Here's an example of a second-long sample being
@@ -188,6 +195,34 @@ They have the same basic pattern: a sample rate is set; a streamer is set up;
 and the playback system is initialized with both.
 
 
+## Caching And Performance
+
+Waves by their nature are, well, repetitive. All basic wave function in gotes
+have exactly one period in the first second; and very often will have identical
+behavior in every other 1-second period.
+
+Gotes offers a few caching utilities that can precalculate these kind of simple,
+1-second period waves. The easiest way to cache a wave is with simply using
+[`gotes.Cache`][cache] as a drop-in. This takes a wave, and returns a cached version of
+it.
+
+For some cases, this can dramatically increase performance. For example, the
+piano note uses a cached version that is less than 90% as expensive and is
+within 0.1% accuracy.
+
+The cache has been tuned to represent what I consider a strong balance between
+performance, accuracy, and correctness. Some discussion and fine grained
+benchmarks can be found in `cache_bench_test.go`.
+
+
 [oto]:https://github.com/hajimehoshi/oto
 [docs]:https://godoc.org/github.com/BennettJames/gotes
 [wav-page]:https://bennettjames.github.io/gotes/index.html
+[basic-example]:https://bennettjames.github.io/gotes/basic-example.html
+[twinkle]:https://bennettjames.github.io/gotes/twinkle.html
+[cache]:https://godoc.org/github.com/BennettJames/gotes#Cache
+[streamer]:https://godoc.org/github.com/BennettJames/gotes#Streamer
+[integrate-wave]:https://godoc.org/github.com/BennettJames/gotes#IntegrateWave
+[sin-wave]:https://godoc.org/github.com/BennettJames/gotes#SinWave
+[wave-fn]:https://godoc.org/github.com/BennettJames/gotes#WaveFn
+[keyboard]:https://godoc.org/github.com/BennettJames/gotes#Keyboard
