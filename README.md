@@ -206,8 +206,8 @@ Gotes offers a few caching utilities that can precalculate these kind of simple,
 [`gotes.Cache`][cache] as a drop-in. This takes a wave, and returns a cached version of
 it.
 
-For some cases, this can dramatically increase performance. For example, the
-piano note uses a cached version that is less than 90% as expensive and is
+This can dramatically increase performance for some waves. For example, the
+piano note uses a cached version that is ~10% as expensive and is
 within 0.1% accuracy.
 
 The cache has been tuned to represent what I consider a strong balance between
